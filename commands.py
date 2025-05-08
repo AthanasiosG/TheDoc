@@ -2,7 +2,7 @@ import discord
 import random
 from discord import app_commands
 from discord.ext import commands
-from songs import all_songs
+from verify_buttons import VerifyButtons
 
 class BasicCommands(commands.Cog):
     def __init__(self, bot):
@@ -16,7 +16,16 @@ class BasicCommands(commands.Cog):
             all_cmd += "/" + cmd + "\n"
         await interaction.response.send_message(embed=discord.Embed(title="Das sind alle verfügbaren Commands:", description=all_cmd, colour=6702))
 
+    
+    @app_commands.command(name="verify", description="Verifizierung")
+    async def verify(self, interaction: discord.Interaction):
+        rules = "Haltet euch an die allgemeinen Discord Regeln"
+        embed = discord.Embed(title=rules, description="Zum akzeptieren der Regeln den grünen Button anklicken, zum Ablehnen den roten Button anklicken",color=discord.Color.green())
+        embed.set_thumbnail(url="https://kwiqreply.io/img/icon/verify.png")
+        view = VerifyButtons()
+        await interaction.response.send_message(embed=embed, view=view)
         
+
     @app_commands.command(name="bot_info", description="Info zum Bot")
     async def info_about_bot(self, interaction: discord.Interaction):
         await interaction.response.send_message(embed=discord.Embed(title="Ich heiße TheDoc und wurde von Thanos programmiert.", colour=6702))
