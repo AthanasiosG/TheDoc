@@ -19,7 +19,7 @@ class BasicCommands(commands.Cog):
         
     @app_commands.command(name="bot_info", description="Info zum Bot")
     async def info_about_bot(self, interaction: discord.Interaction):
-        await interaction.response.send_message(embed=discord.Embed(title="Ich heiße DrBot und wurde von Thanos programmiert.", colour=6702))
+        await interaction.response.send_message(embed=discord.Embed(title="Ich heiße TheDoc und wurde von Thanos programmiert.", colour=6702))
 
 
     @app_commands.command(name="server_owner", description="Gibt an wem der Server gehört")
@@ -54,7 +54,7 @@ class BasicCommands(commands.Cog):
     async def server_rollen(self, interaction: discord.Interaction):
         all_roles = [role.name for role in await interaction.guild.fetch_roles()]
         roles = ""
-        for i, role in enumerate(all_roles[::-1]):
+        for i, role in enumerate(all_roles):
             roles += f"{i+1}: " + role + "\n"
         await interaction.response.send_message(embed=discord.Embed(title="Alle Rollen", description=roles, colour=6702))          
 
