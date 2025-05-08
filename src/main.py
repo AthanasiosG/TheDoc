@@ -48,23 +48,7 @@ async def on_voice_state_update(member, before, after):
         channels = before.channel
         for i, channel in enumerate(channels.guild.voice_channels):
             await channel.edit(name="Talk" + str(i))    
-
-
-@client.event
-async def on_reaction_add(reaction, user):
-    if not user.bot:
-        guild = reaction.message.guild
-        member = guild.get_member(user.id)
-
-        if reaction.emoji == "💎":
-            role = discord.utils.get(guild.roles, name="VIP")
-            if role:
-                await member.add_roles(role)
-        elif reaction.emoji == "◻️":
-            role = discord.utils.get(guild.roles, name="Member")
-            if role:
-                await member.add_roles(role)
-                
+               
                 
 @client.event
 async def on_message(msg):
