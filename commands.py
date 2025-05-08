@@ -53,7 +53,10 @@ class BasicCommands(commands.Cog):
     @app_commands.command(name="rollen", description="Alle verfügbaren rollen")
     async def server_rollen(self, interaction: discord.Interaction):
         all_roles = [role.name for role in await interaction.guild.fetch_roles()]
-        await interaction.response.send_message(embed=discord.Embed(title="Alle Rollen", description=all_roles[::-1], colour=6702))          
+        roles = ""
+        for i, role in enumerate(all_roles[::-1]):
+            roles += f"{i+1}: " + role + "\n"
+        await interaction.response.send_message(embed=discord.Embed(title="Alle Rollen", description=roles, colour=6702))          
 
 
     @app_commands.command(name="clear", description="Löscht Nachrichten im Channel")
