@@ -16,12 +16,12 @@ class VerifyButtons(discord.ui.View):
             verified_role = await guild.create_role(name="Verified", color=discord.Color.green())
 
         await interaction.user.add_roles(verified_role)
-        await interaction.response.send_message("Du bist nun verifiziert!", ephemeral=True)
+        await interaction.response.send_message("Du bist nun verifiziert!\n\nDiese Nachricht wird in kürze automatisch gelöscht...", ephemeral=True, delete_after=8.0)
         
         
     @discord.ui.button(style=discord.ButtonStyle.red, label="Deny", disabled=False)
     async def Deny(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message("Du musst akzeptieren oder du wirst gekickt.", ephemeral=True)
+        await interaction.response.send_message("Du musst akzeptieren oder du wirst gekickt.\n\nDiese Nachricht wird in kürze automatisch gelöscht...", ephemeral=True, delete_after=8.0)
         
 
 class SupportButtons(discord.ui.View):

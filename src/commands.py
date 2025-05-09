@@ -45,7 +45,7 @@ class BasicCommands(commands.Cog):
         msg = f"{user} wurde erfolgreich gekickt!"
         await interaction.user.send(embed=discord.Embed(title=msg, description="Grund: " + reason, color=discord.Color.red()))
         await interaction.response.defer(ephemeral=True)        
-        await interaction.followup.send(f"Vorgang abgeschlossen.", ephemeral=True)
+        await interaction.followup.send(f"Vorgang abgeschlossen. User gekickt.", ephemeral=True)
 
 
     @app_commands.command(name="ban", description="Einen User bannen")
@@ -110,4 +110,5 @@ class BasicCommands(commands.Cog):
             await interaction.response.send_message(embed=discord.Embed(title="Support:", description="Ein Admin wird in kürze das Ticket öffnen und im Anschluss wieder schließen.",
                                                                         colour=6702), view=view)
         else:
-            await interaction.response.send_message("Geh in den #support channel um Hilfe zu bekommen", ephemeral=True)
+            await interaction.response.send_message(f"Geh in den {sup_channel.mention} channel um Hilfe zu bekommen.\n\nDiese Nachricht wird in kürze automatisch gelöscht...",
+                                                    ephemeral=True, delete_after=8.0)

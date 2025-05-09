@@ -73,9 +73,9 @@ async def on_message(msg):
 @client.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     if isinstance(error, app_commands.MissingPermissions):
-        await interaction.response.send_message("❌ Du hast keine Berechtigung für diesen Command.", ephemeral=True)
+        await interaction.response.send_message("❌ Du hast keine Berechtigung für diesen Command.\n\nDiese Nachricht wird in kürze automatisch gelöscht...", ephemeral=True, delete_after=8.0)
     else:
-        await interaction.response.send_message("Ein unbekannter Fehler ist aufgetreten.", ephemeral=True)
+        await interaction.response.send_message("Ein unbekannter Fehler ist aufgetreten.\n\nDiese Nachricht wird in kürze automatisch gelöscht...", ephemeral=True, delete_after=8.0)
  
                     
 client.run(TOKEN)
