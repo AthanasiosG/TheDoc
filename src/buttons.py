@@ -22,3 +22,25 @@ class VerifyButtons(discord.ui.View):
     @discord.ui.button(style=discord.ButtonStyle.red, label="Deny", disabled=False)
     async def Deny(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message("Du musst akzeptieren oder du wirst gekickt.", ephemeral=True)
+        
+
+class SupportButtons(discord.ui.View):
+    def __init__(self, *, timeout=None):
+        super().__init__(timeout=timeout)
+
+
+    @discord.ui.button(style=discord.ButtonStyle.grey, label="support", disabled=False)
+    async def support(self, interaction: discord.Interaction, button: discord.ui.Button):
+        guild = interaction.guild
+        channel = await guild.create_text_channel(name=f"support für {interaction.user}")
+    
+    
+    @discord.ui.button(style=discord.ButtonStyle.green, label="Open", disabled=False)
+    async def open(self, interaction: discord.Interaction, button: discord.ui.Button):
+        pass 
+
+
+    @discord.ui.button(style=discord.ButtonStyle.red, label="Close", disabled=False)
+    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
+        pass 
+    

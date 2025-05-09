@@ -2,7 +2,7 @@ import discord
 import random
 from discord import app_commands
 from discord.ext import commands
-from verify_buttons import VerifyButtons
+from buttons import VerifyButtons, SupportButtons
 
 class BasicCommands(commands.Cog):
     def __init__(self, bot):
@@ -88,3 +88,26 @@ class BasicCommands(commands.Cog):
         await interaction.response.send_message(embed=discord.Embed(title="Folgende Songs sind verfügbar:",
                                                                     description="Fürs Aufrufen !+Songname benutzen:\n\nJust Danke\nPopular\nGive Me Everthing\nPoker Face\n",
                                                                     colour=6702))
+
+
+    @app_commands.command(name="support", description="Hilfe von einem Admin")
+    async def support(self, interaction: discord.Interaction):
+        guild = interaction.guild
+        channel_create = False
+        view = SupportButtons()
+        all_channels = await guild.fetch_channels()
+        for channel in all_channels:
+            if channel.name != "support":
+                channel_create = True
+            else:
+                channel_create = False
+                break
+        if channel_create:
+            sup_channel = await guild.create_text_channel(name="support")
+        else:
+            sup_channel = discord.utils.get(all_channels, name="support")
+        if interaction.channel == sup_channel:
+            await interaction.response.send_message(embed=discord.Embed(title="Support:", description="Ein Admin wird in kürze das Ticket öffnen und im Anschluss wieder schließen.",
+                                                                        colour=6702), view=view)
+        else:
+            await interaction.response.send_message("Geh in den #support channel um Hilfe zu bekommen", ephemeral=True)
