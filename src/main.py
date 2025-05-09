@@ -1,6 +1,7 @@
 import discord
 import os
 from discord.ext import commands
+from discord import app_commands
 from dotenv import load_dotenv
 from commands import BasicCommands
 from songs import all_songs
@@ -68,5 +69,13 @@ async def on_message(msg):
             if msg.channel.name in ["general", "chat", "allgemein"] and song_name == song and msg.author != msg.author.bot:
                 await msg.reply(embed=discord.Embed(title=song[1::], url=url, colour=6702)) 
                     
+
+@client.tree.error
+async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    if isinstance(error, app_commands.MissingPermissions):
+        await interaction.response.send_message("❌ Du hast keine Berechtigung für diesen Command.", ephemeral=True)
+    else:
+        await interaction.response.send_message("Ein unbekannter Fehler ist aufgetreten.", ephemeral=True)
+ 
                     
 client.run(TOKEN)
