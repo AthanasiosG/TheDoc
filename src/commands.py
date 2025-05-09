@@ -3,10 +3,13 @@ import random
 from discord import app_commands
 from discord.ext import commands
 from buttons import VerifyButtons, SupportButtons
+from database import database
+
 
 class BasicCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        
         
     @app_commands.command(name="all_commands", description="Alle verfügbaren Bot-Commands")
     async def all_commands(self, interaction: discord.Interaction):   
@@ -24,7 +27,8 @@ class BasicCommands(commands.Cog):
         embed.set_thumbnail(url="https://kwiqreply.io/img/icon/verify.png")
         view = VerifyButtons()
         await interaction.response.send_message(embed=embed, view=view)
-        
+        sent_msg = await interaction.original_response()
+        database[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
 
     @app_commands.command(name="bot_info", description="Info zum Bot")
     async def info_about_bot(self, interaction: discord.Interaction):
