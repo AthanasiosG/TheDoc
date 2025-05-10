@@ -3,7 +3,7 @@ import random
 from discord import app_commands
 from discord.ext import commands
 from buttons import VerifyButtons, SupportButtons
-from database import verify_db
+from database import support_db, bot_msg_db
 
 
 class BasicCommands(commands.Cog):
@@ -28,7 +28,7 @@ class BasicCommands(commands.Cog):
         view = VerifyButtons()
         await interaction.response.send_message(embed=embed, view=view)
         sent_msg = await interaction.original_response()
-        verify_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
+        bot_msg_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
 
     @app_commands.command(name="bot_info", description="Info zum Bot")
     async def info_about_bot(self, interaction: discord.Interaction):
@@ -87,7 +87,7 @@ class BasicCommands(commands.Cog):
         await interaction.response.send_message(embed=discord.Embed(title=coin, colour=6702))
 
 
-    @app_commands.command(name="support", description="Hilfe von einem Admin")
+    @app_commands.command(name="support", description="Hilfe vom Support")
     async def support(self, interaction: discord.Interaction):
         guild = interaction.guild
         channel_create = False
@@ -104,8 +104,11 @@ class BasicCommands(commands.Cog):
         else:
             sup_channel = discord.utils.get(all_channels, name="support")
         if interaction.channel == sup_channel:
-            await interaction.response.send_message(embed=discord.Embed(title="Support:", description="Ein Admin wird in kürze das Ticket öffnen und im Anschluss wieder schließen.",
+            await interaction.response.send_message(embed=discord.Embed(title="Support:", description="Willst du sicher ein Ticket eröffnen?",
                                                                         colour=6702), view=view)
         else:
-            await interaction.response.send_message(f"Geh in den {sup_channel.mention} channel um Hilfe zu bekommen.\n\nDiese Nachricht wird in kürze automatisch gelöscht...",
+            await interaction.response.send_message(embed=discord.Embed(title=f"Geh in den {sup_channel.mention} channel um Hilfe zu bekommen.",
+                                                                        description="Diese Nachricht wird in kürze automatisch gelöscht...", colour=6702),
                                                     ephemeral=True, delete_after=8.0)
+        sent_msg = await interaction.original_response()
+        support_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
