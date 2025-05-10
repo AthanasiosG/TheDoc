@@ -1,3 +1,1 @@
-database = {
-    
-}
+verify_db = {}

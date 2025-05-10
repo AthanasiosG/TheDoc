@@ -3,7 +3,7 @@ import random
 from discord import app_commands
 from discord.ext import commands
 from buttons import VerifyButtons, SupportButtons
-from database import database
+from database import verify_db
 
 
 class BasicCommands(commands.Cog):
@@ -28,7 +28,7 @@ class BasicCommands(commands.Cog):
         view = VerifyButtons()
         await interaction.response.send_message(embed=embed, view=view)
         sent_msg = await interaction.original_response()
-        database[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
+        verify_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
 
     @app_commands.command(name="bot_info", description="Info zum Bot")
     async def info_about_bot(self, interaction: discord.Interaction):
@@ -85,13 +85,6 @@ class BasicCommands(commands.Cog):
         coin = random.choice(["Kopf", "Zahl"])
         coin = f"Du hast {coin} geworfen."
         await interaction.response.send_message(embed=discord.Embed(title=coin, colour=6702))
-
-
-    @app_commands.command(name="songs", description="Alle verfügbaren Songs")
-    async def songs(self, interaction: discord.Interaction):
-        await interaction.response.send_message(embed=discord.Embed(title="Folgende Songs sind verfügbar:",
-                                                                    description="Fürs Aufrufen !+Songname benutzen:\n\nJust Danke\nPopular\nGive Me Everthing\nPoker Face\n",
-                                                                    colour=6702))
 
 
     @app_commands.command(name="support", description="Hilfe von einem Admin")

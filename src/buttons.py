@@ -1,5 +1,5 @@
 import discord
-from database import database
+from database import verify_db
 
 
 class VerifyButtons(discord.ui.View):
@@ -17,13 +17,13 @@ class VerifyButtons(discord.ui.View):
         await interaction.user.add_roles(verified_role)
         await interaction.response.send_message("Du bist nun verifiziert!\n\nDiese Nachricht wird in kürze automatisch gelöscht...", ephemeral=True, delete_after=8.0)
         user_id = interaction.user.id
-        if user_id in database:
-            channel_id, message_id = database[user_id]
+        if user_id in verify_db:
+            channel_id, message_id = verify_db[user_id]
             channel = interaction.client.get_channel(channel_id)
             try:
                 message = await channel.fetch_message(message_id)
                 await message.delete()
-                del database[user_id]
+                del verify_db[user_id]
             except discord.NotFound:
                 print("Nachricht schon gelöscht oder nicht gefunden.")
             except Exception as error:

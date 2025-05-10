@@ -4,7 +4,6 @@ from discord.ext import commands
 from discord import app_commands
 from dotenv import load_dotenv
 from commands import BasicCommands
-from songs import all_songs
 
 
 intents = discord.Intents.all()
@@ -47,24 +46,8 @@ async def on_voice_state_update(member, before, after):
         channels = before.channel
         for i, channel in enumerate(channels.guild.voice_channels):
             await channel.edit(name="Talk" + str(i))    
-               
                 
-@client.event
-async def on_message(msg):
-    if msg.author.bot:
-        return       
-    if msg.content in [song.lower() for song in all_songs.keys()] or msg.content in [song for song in all_songs.keys()]:    
-        song_name = ""
-        for num, letter in enumerate(msg.content):
-            if num == 1:
-                song_name+= letter.upper()
-            else:
-                song_name+= letter
-        for song, url in all_songs.items():
-            if msg.channel.name in ["general", "chat", "allgemein"] and song_name == song and msg.author != msg.author.bot:
-                await msg.reply(embed=discord.Embed(title=song[1::], url=url, colour=6702)) 
                     
-
 @client.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     if isinstance(error, app_commands.MissingPermissions):
