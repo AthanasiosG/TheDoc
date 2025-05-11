@@ -138,3 +138,43 @@ class SupportTeamButtons(discord.ui.View):
             del bot_msg_db[self.user_id]
         except Exception as e:
             print(f"Fehler beim Löschen: {e}")
+            
+            
+
+class CloseTicketButtons(discord.ui.View):
+    def __init__(self, *, timeout=None):
+        super().__init__(timeout=timeout)
+        
+        
+    @discord.ui.button(style=discord.ButtonStyle.green, label="Ja", disabled=False)
+    async def yes(self, interaction: discord.Interaction, button: discord.ui.Button):
+        guild = interaction.guild
+        all_roles = guild.roles
+        sup_role = discord.utils.get(all_roles, name="Support")
+        user = interaction.user
+        user_sup_role = user.get_role(sup_role.id)
+        if user_sup_role:
+            channel = interaction.channel
+            await channel.delete()
+            
+            
+    @discord.ui.button(style=discord.ButtonStyle.red, label="Nein", disabled=False)
+    async def no(self, interaction: discord.Interaction, button: discord.ui.Button):
+            guild = interaction.guild
+            all_roles = guild.roles
+            sup_role = discord.utils.get(all_roles, name="Support")
+            user = interaction.user
+            user_sup_role = user.get_role(sup_role.id)
+            if user_sup_role:
+                user_id = user.id
+                if user_id in bot_msg_db:
+                    channel_id, message_id = bot_msg_db[user_id]
+                    channel = interaction.client.get_channel(channel_id)
+                    try:
+                        message = await channel.fetch_message(message_id)
+                        await message.delete()
+                        del bot_msg_db[user_id]
+                    except discord.NotFound:
+                        print("Nachricht schon gelöscht oder nicht gefunden.")
+                    except Exception as error:
+                        print(f"Fehler beim Löschen: {error}")   

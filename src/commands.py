@@ -2,7 +2,7 @@ import discord
 import random
 from discord import app_commands
 from discord.ext import commands
-from buttons import VerifyButtons, SupportButtons
+from buttons import VerifyButtons, SupportButtons, CloseTicketButtons
 from database import support_db, bot_msg_db
 
 
@@ -121,9 +121,12 @@ class BasicCommands(commands.Cog):
         sup_role = discord.utils.get(all_roles, name="Support")
         user = interaction.user
         user_sup_role = user.get_role(sup_role.id)
+        view = CloseTicketButtons()
         if user_sup_role:
-            channel = interaction.channel
-            await channel.delete()
+            await interaction.response.send_message(embed=discord.Embed(title="Ticket sicher schließen?", description="Dieser Channel wird gelöscht. Fortfahren?", colour=6702),
+                                                    view=view, delete_after=8.0)
+            sent_msg = await interaction.original_response()
+            bot_msg_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
         else:
             await interaction.response.send_message("❌ Du hast keine Berechtigung für diesen Command.\n\nDiese Nachricht wird in kürze automatisch gelöscht...", ephemeral=True, delete_after=8.0)
                 
