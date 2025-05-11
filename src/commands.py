@@ -112,3 +112,18 @@ class BasicCommands(commands.Cog):
                                                     ephemeral=True, delete_after=8.0)
         sent_msg = await interaction.original_response()
         support_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
+        
+    
+    @app_commands.command(name="closeticket", description="Nur für Support-Mitglieder")
+    async def close_ticket(self, interaction: discord.Interaction):
+        guild = interaction.guild
+        all_roles = guild.roles
+        sup_role = discord.utils.get(all_roles, name="Support")
+        user = interaction.user
+        user_sup_role = user.get_role(sup_role.id)
+        if user_sup_role:
+            channel = interaction.channel
+            await channel.delete()
+        else:
+            await interaction.response.send_message("❌ Du hast keine Berechtigung für diesen Command.\n\nDiese Nachricht wird in kürze automatisch gelöscht...", ephemeral=True, delete_after=8.0)
+                
