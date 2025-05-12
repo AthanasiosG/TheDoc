@@ -22,6 +22,7 @@ async def on_ready():
 @client.event
 async def on_guild_join(guild: discord.Guild):
     all_channels = await guild.fetch_channels()
+    
     for channel in all_channels:
         if channel.name in ["general", "chat", "allgemein"]:
             await channel.send(embed=discord.Embed(title="Hallo! Ich bin TheDoc 😊", description="Mit /all_commands findet ihr alle verfügbaren Commands!", colour=6702))
@@ -40,7 +41,7 @@ async def on_voice_state_update(member, before, after):
         channel = after.channel 
         if len(channel.members) == 1:
             cloned_channel = await channel.clone(name="Talk")
-            await cloned_channel.edit(name="Talk" + str(len(channel.guild.voice_channels)-1)) 
+            await cloned_channel.edit(name="Talk" + str(len(channel.guild.voice_channels)-1))      
     elif before.channel is not None and after.channel is None and len(before.channel.members) == 0:
         await before.channel.delete()
         channels = before.channel

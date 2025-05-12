@@ -12,13 +12,14 @@ class VerifyButtons(discord.ui.View):
         guild = interaction.guild
         roles = await guild.fetch_roles()
         verified_role = discord.utils.get(roles, name="Verified") or discord.utils.get(roles, name="Verifiziert")
+        
         if not verified_role:
             verified_role = await guild.create_role(name="Verified", color=discord.Color.green())
+            
         await interaction.user.add_roles(verified_role)
-        await interaction.response.send_message(embed=discord.Embed(title="Du bist nun verifiziert!", description="Diese Nachricht wird in kürze automatisch gelöscht...",
-                                                                    colour=6702),
-                                                                    ephemeral=True, delete_after=8.0)
+        await interaction.response.send_message(embed=discord.Embed(title="Du bist nun verifiziert!", description="Diese Nachricht wird in kürze automatisch gelöscht...", colour=6702), ephemeral=True, delete_after=8.0)
         user_id = interaction.user.id
+        
         if user_id in bot_msg_db:
             channel_id, message_id = bot_msg_db[user_id]
             channel = interaction.client.get_channel(channel_id)
@@ -34,9 +35,7 @@ class VerifyButtons(discord.ui.View):
         
     @discord.ui.button(style=discord.ButtonStyle.red, label="Deny", disabled=False)
     async def Deny(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(embed=discord.Embed(title="Du musst akzeptieren oder du wirst gekickt.", description="Diese Nachricht wird in kürze automatisch gelöscht...",
-                                                                    colour=6702), 
-                                                                    ephemeral=True, delete_after=8.0)
+        await interaction.response.send_message(embed=discord.Embed(title="Du musst akzeptieren oder du wirst gekickt.", description="Diese Nachricht wird in kürze automatisch gelöscht...", colour=6702), ephemeral=True, delete_after=8.0)
         
 
 
@@ -51,12 +50,14 @@ class SupportButtons(discord.ui.View):
         user_id = interaction.user.id
         all_roles = await interaction.guild.fetch_roles()
         all_channels = await guild.fetch_channels()
+        
         for channel in all_channels:
             if channel.name != "support_team":
                 channel_create = True
             else:
                 channel_create = False
                 break
+            
         if channel_create:
             support_channel = await guild.create_text_channel(name="support_team")
             for role in all_roles:
@@ -66,12 +67,13 @@ class SupportButtons(discord.ui.View):
                     await support_channel.set_permissions(target=role, read_messages=False, send_messages=False)
         else:
             support_channel = discord.utils.get(all_channels, name="support_team")
+            
         view = SupportTeamButtons(user_id)
         support_role = discord.utils.get(guild.roles, name="Support")
         msg = await support_channel.send(embed=discord.Embed(title="Ein Ticket wurde eröffnet", colour=6702), content=support_role.mention, view=view)
-        await interaction.response.send_message(embed=discord.Embed(title="Erfolg!", description="Ein Support-Mitarbeiter wird das Ticket in kürze bearbeiten...", colour=6702),
-                                                ephemeral=True, delete_after=8.0)
+        await interaction.response.send_message(embed=discord.Embed(title="Erfolg!", description="Ein Support-Mitarbeiter wird das Ticket in kürze bearbeiten...", colour=6702), ephemeral=True, delete_after=8.0)
         bot_msg_db[user_id] = (support_channel.id, msg.id)
+        
         if user_id in support_db:
             channel_id, message_id = support_db[user_id]
             channel = interaction.client.get_channel(channel_id)
@@ -88,6 +90,7 @@ class SupportButtons(discord.ui.View):
     @discord.ui.button(style=discord.ButtonStyle.red, label="Cancel", disabled=False)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
         user_id = interaction.user.id
+        
         if user_id in support_db:
             try:
                 channel_id, msg_id = support_db[user_id]
@@ -97,6 +100,7 @@ class SupportButtons(discord.ui.View):
                 del support_db[user_id]
             except Exception as e:
                 print(f"Fehler beim Löschen: {e}")
+                
         await interaction.response.send_message("Ticketanfrage abgebrochen.", ephemeral=True)
 
 
@@ -113,9 +117,11 @@ class SupportTeamButtons(discord.ui.View):
         user = guild.get_member(self.user_id)
         sup_channel = await guild.create_text_channel(name=f"support-{user.name}")
         await sup_channel.set_permissions(user, read_messages=True, send_messages=True)
+        
         for role in guild.roles:
             if role.permissions != discord.Permissions.administrator:
                 await sup_channel.set_permissions(role, read_messages=False)
+        
         await interaction.response.send_message(embed=discord.Embed(title=f"Ticket geöffnet: {sup_channel.mention}", colour=6702), ephemeral=True, delete_after=15.0)
         try:
             channel_id, msg_id = bot_msg_db[self.user_id]
@@ -153,6 +159,7 @@ class CloseTicketButtons(discord.ui.View):
         sup_role = discord.utils.get(all_roles, name="Support")
         user = interaction.user
         user_sup_role = user.get_role(sup_role.id)
+        
         if user_sup_role:
             channel = interaction.channel
             await channel.delete()
@@ -165,6 +172,7 @@ class CloseTicketButtons(discord.ui.View):
             sup_role = discord.utils.get(all_roles, name="Support")
             user = interaction.user
             user_sup_role = user.get_role(sup_role.id)
+            
             if user_sup_role:
                 user_id = user.id
                 if user_id in bot_msg_db:

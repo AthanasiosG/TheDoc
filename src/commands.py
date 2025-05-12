@@ -15,8 +15,10 @@ class BasicCommands(commands.Cog):
     async def all_commands(self, interaction: discord.Interaction):   
         cmd_list = [cmd.name for cmd in self.bot.tree.get_commands()]
         all_cmd = ""
+        
         for cmd in cmd_list:
             all_cmd += "/" + cmd + "\n"
+            
         await interaction.response.send_message(embed=discord.Embed(title="Das sind alle verfügbaren Commands:", description=all_cmd, colour=6702))
 
     
@@ -67,8 +69,10 @@ class BasicCommands(commands.Cog):
     async def server_rollen(self, interaction: discord.Interaction):
         all_roles = [role.name for role in await interaction.guild.fetch_roles()]
         roles = ""
+        
         for i, role in enumerate(all_roles):
             roles += f"{i+1}: " + role + "\n"
+            
         await interaction.response.send_message(embed=discord.Embed(title="Alle Rollen", description=roles, colour=6702))          
 
 
@@ -93,23 +97,24 @@ class BasicCommands(commands.Cog):
         channel_create = False
         view = SupportButtons()
         all_channels = await guild.fetch_channels()
+        
         for channel in all_channels:
             if channel.name != "support":
                 channel_create = True
             else:
                 channel_create = False
                 break
+            
         if channel_create:
             sup_channel = await guild.create_text_channel(name="support")
         else:
             sup_channel = discord.utils.get(all_channels, name="support")
+            
         if interaction.channel == sup_channel:
-            await interaction.response.send_message(embed=discord.Embed(title="Support:", description="Willst du sicher ein Ticket eröffnen?",
-                                                                        colour=6702), view=view)
+            await interaction.response.send_message(embed=discord.Embed(title="Support:", description="Willst du sicher ein Ticket eröffnen?", colour=6702), view=view)
         else:
-            await interaction.response.send_message(embed=discord.Embed(title=f"Geh in den {sup_channel.mention} channel um Hilfe zu bekommen.",
-                                                                        description="Diese Nachricht wird in kürze automatisch gelöscht...", colour=6702),
-                                                    ephemeral=True, delete_after=8.0)
+            await interaction.response.send_message(embed=discord.Embed(title=f"Geh in den {sup_channel.mention} channel um Hilfe zu bekommen.", description="Diese Nachricht wird in kürze automatisch gelöscht...", colour=6702), ephemeral=True, delete_after=8.0)
+            
         sent_msg = await interaction.original_response()
         support_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
         
@@ -122,9 +127,9 @@ class BasicCommands(commands.Cog):
         user = interaction.user
         user_sup_role = user.get_role(sup_role.id)
         view = CloseTicketButtons()
+        
         if user_sup_role:
-            await interaction.response.send_message(embed=discord.Embed(title="Ticket sicher schließen?", description="Dieser Channel wird gelöscht. Fortfahren?", colour=6702),
-                                                    view=view, delete_after=8.0)
+            await interaction.response.send_message(embed=discord.Embed(title="Ticket sicher schließen?", description="Dieser Channel wird gelöscht. Fortfahren?", colour=6702), view=view, delete_after=8.0)
             sent_msg = await interaction.original_response()
             bot_msg_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
         else:
