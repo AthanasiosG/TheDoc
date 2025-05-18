@@ -23,13 +23,25 @@ class BasicCommands(commands.Cog):
     
     @app_commands.command(name="verify", description="Verifizierung")
     async def verify(self, interaction: discord.Interaction):
-        rules = "Haltet euch an die allgemeinen Discord Regeln"
-        embed = discord.Embed(title=rules, description="Zum akzeptieren der Regeln den grünen Button anklicken, zum Ablehnen den roten Button anklicken",color=discord.Color.green())
-        embed.set_thumbnail(url="https://kwiqreply.io/img/icon/verify.png")
-        view = VerifyButtons()
-        await interaction.response.send_message(embed=embed, view=view)
-        sent_msg = await interaction.original_response()
-        bot_msg_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
+        roles = await interaction.guild.fetch_roles()
+        verified_role = discord.utils.get(roles, name="Verified") or discord.utils.get(roles, name="Verifiziert")       
+        is_verified = False
+        
+        for role in interaction.user.roles:
+            if role == verified_role:
+                is_verified = True
+                
+        if is_verified:
+            await interaction.response.send_message(embed=discord.Embed(title="Du bist bereits verifiziert!", description="Diese Nachricht wird in kürze automatisch gelöscht...", colour=6702), ephemeral=True, delete_after=8.0)
+        else:
+            rules = "Haltet euch an die allgemeinen Discord Regeln"
+            embed = discord.Embed(title=rules, description="Zum akzeptieren der Regeln den grünen Button anklicken, zum Ablehnen den roten Button anklicken",color=discord.Color.green())
+            embed.set_thumbnail(url="https://kwiqreply.io/img/icon/verify.png")
+            view = VerifyButtons()
+            await interaction.response.send_message(embed=embed, view=view)
+            sent_msg = await interaction.original_response()
+            bot_msg_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
+
 
     @app_commands.command(name="bot_info", description="Info zum Bot")
     async def info_about_bot(self, interaction: discord.Interaction):
@@ -139,7 +151,8 @@ class BasicCommands(commands.Cog):
     @app_commands.checks.has_permissions(administrator=True)
     async def role_setup(self, interaction: discord.Interaction):
         await interaction.user.send(embed=discord.Embed(title="Setup für Rollen", description="Zuordnung von Rolle mit Emoji. Essentiell für /rollenauswahl.\n\nWICHTIG: Folgende Nachricht in genau dem Format senden:\n\n!rollensetup [rollenname]:[emoji] [rollenname]:[emoji]...\n'rollenname' = Tatsächlicher Name \n 'emoji' = gewünschtes Emoji für die Rolle\n\nBeispiel: !rollensetup VIP:💎 Member:🙄", colour=6702))
-        await interaction.response.send_message(embed=discord.Embed(title="Schau in deinen DMs.",description="Ich habe dir eine Anleitung geschickt ", colour=6702), ephemeral=True, delete_after=8.0)
+        await interaction.response.send_message(embed=discord.Embed(title="Schau in deinen DMs.",description="Ich habe dir eine Anleitung geschickt.", colour=6702), ephemeral=True, delete_after=8.0)
+        
         
     @app_commands.command(name="rollenauswahl", description="Wähle die Rollen, die du haben möchtest.")
     async def chose_role(self, interaction: discord.Interaction):
