@@ -1,8 +1,7 @@
-import discord
-import random
+import discord, random, sqlite3
 from discord import app_commands
 from discord.ext import commands
-from buttons import VerifyButtons, SupportButtons, CloseTicketButtons
+from buttons import VerifyButtons, SupportButtons, CloseTicketButtons, ChoseRole
 from database import support_db, bot_msg_db
 
 
@@ -135,3 +134,25 @@ class BasicCommands(commands.Cog):
         else:
             await interaction.response.send_message("❌ Du hast keine Berechtigung für diesen Command.\n\nDiese Nachricht wird in kürze automatisch gelöscht...", ephemeral=True, delete_after=8.0)
                 
+                
+    @app_commands.command(name="rollensetup", description="Setup für Rollen -> Rollen die sich jeder holen kann")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def role_setup(self, interaction: discord.Interaction):
+        await interaction.user.send(embed=discord.Embed(title="Setup für Rollen", description="Zuordnung von Rolle mit Emoji. Essentiell für /rollenauswahl.\n\nWICHTIG: Folgende Nachricht in genau dem Format senden:\n\n!rollensetup [rollenname]:[emoji] [rollenname]:[emoji]...\n'rollenname' = Tatsächlicher Name \n 'emoji' = gewünschtes Emoji für die Rolle\n\nBeispiel: !rollensetup VIP:💎 Member:🙄", colour=6702))
+        await interaction.response.send_message(embed=discord.Embed(title="Schau in deinen DMs.",description="Ich habe dir eine Anleitung geschickt ", colour=6702), ephemeral=True, delete_after=8.0)
+        
+    @app_commands.command(name="rollenauswahl", description="Wähle die Rollen, die du haben möchtest.")
+    async def chose_role(self, interaction: discord.Interaction):
+        view = ChoseRole(interaction)
+        
+        with sqlite3.connect("rolesystem.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * from role_setup")            
+            server_found = False
+            for i in cursor.fetchall():
+                if interaction.guild.id == i[0]:
+                    server_found = True
+            if server_found:
+                await interaction.response.send_message(embed=discord.Embed(title=f"Wähle deine Rollen:", colour=6702), view=view, ephemeral=True)
+            else:
+                await interaction.response.send_message(embed=discord.Embed(title=f"Noch kein Rollen-Setup gemacht -> /rollensetup", colour=6702), view=view, ephemeral=True, delete_after=10.0)

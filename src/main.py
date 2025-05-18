@@ -1,5 +1,4 @@
-import discord
-import os
+import discord, os, sqlite3
 from discord.ext import commands
 from discord import app_commands
 from dotenv import load_dotenv
@@ -24,7 +23,10 @@ async def on_guild_join(guild: discord.Guild):
     all_channels = await guild.fetch_channels()
     
     for channel in all_channels:
-        if channel.name in ["general", "chat", "allgemein"]:
+        if channel.name in ["Willkommen", "Welcome"]:
+            await channel.send(embed=discord.Embed(title="Hallo! Ich bin TheDoc 😊", description="Mit /all_commands findet ihr alle verfügbaren Commands!", colour=6702))
+            break
+        elif channel.name in ["general", "chat", "allgemein"]:
             await channel.send(embed=discord.Embed(title="Hallo! Ich bin TheDoc 😊", description="Mit /all_commands findet ihr alle verfügbaren Commands!", colour=6702))
             break
         
@@ -56,5 +58,30 @@ async def on_app_command_error(interaction: discord.Interaction, error: app_comm
     else:
         await interaction.response.send_message("Ein unbekannter Fehler ist aufgetreten.\n\nDiese Nachricht wird in kürze automatisch gelöscht...", ephemeral=True, delete_after=8.0)
 
-                      
+
+@client.event
+async def on_message(msg):
+    if msg.author.bot:
+        return
+    
+    if msg.content.startswith("!rollensetup"):
+        msg_list = msg.content.split()
+        msg_list.pop(0)
+        with sqlite3.connect("rolesystem.db") as conn:
+            cursor = conn.cursor()
+            for i in msg_list:
+                role = ""
+                for j in i:
+                    if j != ":":
+                        role += j
+                    elif j == ":":
+                        role += " "
+                setup = role.split()
+                cursor.execute("INSERT OR IGNORE INTO role_setup VALUES (?, ?, ?)", (msg.guild.id, setup[0], setup[1]))
+                conn.commit()
+            cursor.execute("SELECT * FROM role_setup")
+        await msg.channel.send("Daten gespeichert.", delete_after=5.0)
+        await msg.delete()
+            
+                                    
 client.run(TOKEN)

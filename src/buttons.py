@@ -1,4 +1,4 @@
-import discord
+import discord, sqlite3
 from database import support_db, bot_msg_db
 
 
@@ -185,4 +185,40 @@ class CloseTicketButtons(discord.ui.View):
                     except discord.NotFound:
                         print("Nachricht schon gelöscht oder nicht gefunden.")
                     except Exception as error:
-                        print(f"Fehler beim Löschen: {error}")   
+                        print(f"Fehler beim Löschen: {error}")
+                        
+
+
+class ChoseRole(discord.ui.View):
+    def __init__(self, interaction: discord.Interaction):
+        super().__init__(timeout=None)
+        self.interaction = interaction
+        self.guild_id = interaction.guild.id
+        
+        with sqlite3.connect("rolesystem.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * from role_setup")            
+            for i in cursor.fetchall():
+                if self.guild_id == i[0]:
+                    role = i[1]
+                    emoji = i[2]
+                    button = discord.ui.Button(style=discord.ButtonStyle.primary, label=emoji, disabled=False)
+                    button.callback = self.handle_button(role)
+                    self.add_item(button)
+
+
+    def handle_button(self, role_name):
+        async def handle(interaction: discord.Interaction):
+            guild = interaction.guild
+            role_to_get = discord.utils.get(guild.roles, name=role_name)
+            member = interaction.user
+
+            if role_to_get not in member.roles:
+                await member.add_roles(role_to_get)
+                await interaction.response.send_message(embed=discord.Embed(title=f"Rolle **{role_name}** hinzugefügt!", colour=6702), ephemeral=True, delete_after=8.0)
+            else:
+                await member.remove_roles(role_to_get)
+                await interaction.response.send_message(embed=discord.Embed(title=f"Rolle **{role_name}** entfernt!", colour=6702), ephemeral=True, delete_after=8.0)
+
+        return handle
+       
