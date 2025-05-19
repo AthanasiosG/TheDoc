@@ -81,8 +81,8 @@ class BasicCommands(commands.Cog):
         all_roles = [role.name for role in await interaction.guild.fetch_roles()]
         roles = ""
         
-        for i, role in enumerate(all_roles):
-            roles += f"{i+1}: " + role + "\n"
+        for idx, role in enumerate(all_roles):
+            roles += f"{idx+1}: " + role + "\n"
             
         await interaction.response.send_message(embed=discord.Embed(title="Alle Rollen", description=roles, colour=6702))          
 
@@ -103,10 +103,10 @@ class BasicCommands(commands.Cog):
 
 
     @app_commands.command(name="support", description="Hilfe vom Support")
-    async def support(self, interaction: discord.Interaction):
+    async def support(self, interaction: discord.Interaction, reason: str = None):
         guild = interaction.guild
         channel_create = False
-        view = SupportButtons()
+        view = SupportButtons(reason)
         all_channels = await guild.fetch_channels()
         
         for channel in all_channels:
@@ -136,8 +136,8 @@ class BasicCommands(commands.Cog):
         all_roles = guild.roles
         sup_role = discord.utils.get(all_roles, name="Support")
         user = interaction.user
-        user_sup_role = user.get_role(sup_role.id)
         view = CloseTicketButtons()
+        user_sup_role = user.get_role(sup_role.id)
         
         if user_sup_role:
             await interaction.response.send_message(embed=discord.Embed(title="Ticket sicher schließen?", description="Dieser Channel wird gelöscht. Fortfahren?", colour=6702), view=view, delete_after=8.0)

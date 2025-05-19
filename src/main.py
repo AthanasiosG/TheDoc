@@ -69,15 +69,15 @@ async def on_message(msg):
         msg_list.pop(0)
         with sqlite3.connect("rolesystem.db") as conn:
             cursor = conn.cursor()
-            for i in msg_list:
-                role = ""
-                for j in i:
-                    if j != ":":
-                        role += j
-                    elif j == ":":
-                        role += " "
-                setup = role.split()
-                cursor.execute("INSERT OR IGNORE INTO role_setup VALUES (?, ?, ?)", (msg.guild.id, setup[0], setup[1]))
+            for role_emoji_pair in msg_list:
+                pair = ""
+                for char in role_emoji_pair:
+                    if char != ":":
+                        pair += char
+                    elif char == ":":
+                        pair += " "
+                role_name, emoji = pair.split()
+                cursor.execute("INSERT OR IGNORE INTO role_setup VALUES (?, ?, ?)", (msg.guild.id, role_name[0], emoji[1]))
                 conn.commit()
             cursor.execute("SELECT * FROM role_setup")
         await msg.channel.send("Daten gespeichert.", delete_after=5.0)
