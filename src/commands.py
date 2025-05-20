@@ -1,4 +1,4 @@
-import discord, random, sqlite3
+import discord, random, sqlite3, asyncio
 from discord import app_commands
 from discord.ext import commands
 from buttons import VerifyButtons, SupportButtons, CloseTicketButtons, ChoseRole
@@ -169,14 +169,13 @@ class BasicCommands(commands.Cog):
                 await interaction.response.send_message(embed=discord.Embed(title=f"Noch kein Rollen-Setup gemacht -> /rollensetup", colour=6702), view=view, ephemeral=True, delete_after=10.0)
                 
                 
-    # @app_commands.command(name="to_do_list", description="Setzt Erinnerung in x Min.")
-    # async def to_do_list(self, interaction: discord.Interaction, time: int, todo: str = None):
-    #     user = interaction.user
+    @app_commands.command(name="to_do", description="Setzt Erinnerung in x Min.")
+    async def to_do(self, interaction: discord.Interaction, todo: str, timer: int):
+        timer *= 60
+        await interaction.response.defer(ephemeral=True)
         
-        
-    #     with sqlite3.connect("to_do_list.db") as conn:
-    #         cursor = conn.cursor()
-    #         cursor.execute("INSERT INTO to_do_list VALUES (?,?,?)", (user.id, time, todo))
-    #         conn.commit()
-    #         conn.close()
-        
+        while timer > 0:
+            await asyncio.sleep(1)
+            timer -= 1
+            
+        await interaction.user.send(embed=discord.Embed(title="Erinnerung!", description=todo, colour=6702))
