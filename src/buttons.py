@@ -1,4 +1,4 @@
-import discord, sqlite3
+import discord, sqlite3, asyncio
 from database import support_db, bot_msg_db
 
 
@@ -81,11 +81,7 @@ class SupportButtons(discord.ui.View):
         bot_msg_db[user_id] = (support_channel.id, msg.id)
         
         if user_id in support_db:
-            channel_id, message_id = support_db[user_id]
-            channel = interaction.client.get_channel(channel_id)
             try:
-                message = await channel.fetch_message(message_id)
-                await message.delete()
                 del support_db[user_id]
             except discord.NotFound:
                 print("Nachricht schon gelöscht oder nicht gefunden.")
@@ -99,19 +95,14 @@ class SupportButtons(discord.ui.View):
         
         if user_id in support_db:
             try:
-                channel_id, msg_id = support_db[user_id]
-                channel = interaction.client.get_channel(channel_id)
-                msg = await channel.fetch_message(msg_id)
-                await msg.delete()
                 del support_db[user_id]
             except Exception as e:
                 print(f"Fehler beim Löschen: {e}")
                 
-        await interaction.response.send_message("Ticketanfrage abgebrochen.", ephemeral=True)
+        await interaction.response.send_message("Ticketanfrage abgebrochen.", ephemeral=True, delete_after=8.0)
 
 
 
-import asyncio
 class SupportTeamButtons(discord.ui.View):
     def __init__(self, user_id, *, timeout=None):
         super().__init__(timeout=timeout)
@@ -178,30 +169,8 @@ class CloseTicketButtons(discord.ui.View):
         
         if user_sup_role:
             channel = interaction.channel
-            await channel.delete()
-            
-            
-    @discord.ui.button(style=discord.ButtonStyle.red, label="Nein", disabled=False)
-    async def no(self, interaction: discord.Interaction, button: discord.ui.Button):
-        guild = interaction.guild
-        all_roles = guild.roles
-        sup_role = discord.utils.get(all_roles, name="Support")
-        user_sup_role = interaction.user.get_role(sup_role.id)  
-            
-        if user_sup_role:
-            user_id = interaction.user.id
-            if user_id in bot_msg_db:
-                channel_id, message_id = bot_msg_db[user_id]
-                channel = interaction.client.get_channel(channel_id)
-                try:
-                    message = await channel.fetch_message(message_id)
-                    await message.delete()
-                    del bot_msg_db[user_id]
-                except discord.NotFound:
-                    print("Nachricht schon gelöscht oder nicht gefunden.")
-                except Exception as error:
-                    print(f"Fehler beim Löschen: {error}")
-                        
+            await channel.delete()    
+                         
 
 
 class ChoseRole(discord.ui.View):

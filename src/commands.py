@@ -122,7 +122,7 @@ class BasicCommands(commands.Cog):
             sup_channel = discord.utils.get(all_channels, name="support")
             
         if interaction.channel == sup_channel:
-            await interaction.response.send_message(embed=discord.Embed(title="Support:", description="Willst du sicher ein Ticket eröffnen?", colour=6702), view=view)
+            await interaction.response.send_message(embed=discord.Embed(title="Support", description="Willst du sicher ein Ticket eröffnen?", colour=6702), view=view, ephemeral=True, delete_after=15.0)
         else:
             await interaction.response.send_message(embed=discord.Embed(title=f"Geh in den {sup_channel.mention} channel um Hilfe zu bekommen.", description="Diese Nachricht wird in kürze automatisch gelöscht...", colour=6702), ephemeral=True, delete_after=8.0)
             
@@ -140,9 +140,7 @@ class BasicCommands(commands.Cog):
         user_sup_role = user.get_role(sup_role.id)
         
         if user_sup_role:
-            await interaction.response.send_message(embed=discord.Embed(title="Ticket sicher schließen?", description="Dieser Channel wird gelöscht. Fortfahren?", colour=6702), view=view, delete_after=8.0)
-            sent_msg = await interaction.original_response()
-            bot_msg_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
+            await interaction.response.send_message(embed=discord.Embed(title="Ticket sicher schließen?", description="Dieser Channel wird gelöscht. Fortfahren?", colour=6702), view=view, ephemeral=True)
         else:
             await interaction.response.send_message("❌ Du hast keine Berechtigung für diesen Command.\n\nDiese Nachricht wird in kürze automatisch gelöscht...", ephemeral=True, delete_after=8.0)
                 
@@ -169,3 +167,16 @@ class BasicCommands(commands.Cog):
                 await interaction.response.send_message(embed=discord.Embed(title=f"Wähle deine Rollen:", colour=6702), view=view, ephemeral=True)
             else:
                 await interaction.response.send_message(embed=discord.Embed(title=f"Noch kein Rollen-Setup gemacht -> /rollensetup", colour=6702), view=view, ephemeral=True, delete_after=10.0)
+                
+                
+    # @app_commands.command(name="to_do_list", description="Setzt Erinnerung in x Min.")
+    # async def to_do_list(self, interaction: discord.Interaction, time: int, todo: str = None):
+    #     user = interaction.user
+        
+        
+    #     with sqlite3.connect("to_do_list.db") as conn:
+    #         cursor = conn.cursor()
+    #         cursor.execute("INSERT INTO to_do_list VALUES (?,?,?)", (user.id, time, todo))
+    #         conn.commit()
+    #         conn.close()
+        
