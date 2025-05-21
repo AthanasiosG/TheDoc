@@ -77,7 +77,7 @@ async def on_message(msg):
                     elif char == ":":
                         pair += " "
                 role_name, emoji = pair.split()
-                cursor.execute("INSERT OR IGNORE INTO role_setup VALUES (?, ?, ?)", (msg.guild.id, role_name[0], emoji[1]))
+                cursor.execute("INSERT OR IGNORE INTO role_setup VALUES (?, ?, ?)", (msg.guild.id, role_name, emoji))
                 conn.commit()
             cursor.execute("SELECT * FROM role_setup")
         await msg.channel.send("Daten gespeichert.", delete_after=5.0)
