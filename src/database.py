@@ -31,3 +31,20 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS violation(
 
 conn.commit()
 conn.close()
+
+
+conn = sqlite3.connect("supportsystem_setup.db")
+cursor = conn.cursor()
+
+cursor.execute("""CREATE TABLE IF NOT EXISTS setup(
+    guild_id INTEGER NOT NULL,
+    sup_ch_name TEXT NOT NULL,
+    sup_team_ch_name TEXT NOT NULL,
+    sup_role TEXT NOT NULL
+    )
+""")
+
+
+
+conn.commit()
+conn.close()
