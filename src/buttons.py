@@ -49,28 +49,18 @@ class SupportButtons(discord.ui.View):
     async def yes(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
         user_id = interaction.user.id
-        all_roles = await interaction.guild.fetch_roles()
         all_channels = await guild.fetch_channels()
         
-        for channel in all_channels:
-            if channel.name != "support_team":
-                channel_create = True
-            else:
-                channel_create = False
-                break
-            
-        if channel_create:
-            support_channel = await guild.create_text_channel(name="support_team")
-            for role in all_roles:
-                if role.name == "Support":
-                    await support_channel.set_permissions(target=role, read_messages=True, send_messages=True)      
-                else:
-                    await support_channel.set_permissions(target=role, read_messages=False, send_messages=False)
-        else:
-            support_channel = discord.utils.get(all_channels, name="support_team")
-            
+        with sqlite3.connect("supportsystem_setup.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * from setup")
+            for data in cursor.fetchall():
+                if data[0] == interaction.guild.id:
+                    sup_team_ch_name = data[2]        
+        
         view = SupportTeamButtons(user_id)
         support_role = discord.utils.get(guild.roles, name="Support")
+        support_channel = discord.utils.get(all_channels, name=sup_team_ch_name)
         
         if self.reason is None:
             self.reason = "Keiner angegeben"

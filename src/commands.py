@@ -102,32 +102,70 @@ class BasicCommands(commands.Cog):
         await interaction.response.send_message(embed=discord.Embed(title=coin, colour=6702))
 
 
+    @app_commands.command(name="support_setup", description="Das Setup um das Supportsystem benutzen zu können.")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def sup_setup(self, interaction: discord.Interaction, sup_ch_name: str, sup_team_ch_name: str, sup_role: str):        
+        all_channels = await interaction.guild.fetch_channels()        
+        all_roles = await interaction.guild.fetch_roles()
+        await interaction.response.defer(ephemeral=True)       
+        with sqlite3.connect("supportsystem_setup.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute(f"SELECT guild_id from setup WHERE guild_id={interaction.guild.id}")
+            if not cursor.fetchall():
+                await interaction.guild.create_text_channel(name=sup_ch_name)
+                support_channel = await interaction.guild.create_text_channel(name=sup_team_ch_name)
+                cursor.execute("INSERT INTO setup VALUES (?,?,?,?)", (interaction.guild.id, sup_ch_name, sup_team_ch_name, sup_role))
+                conn.commit()
+            else:
+                cursor.execute("SELECT * from setup")
+                data = cursor.fetchall()
+                channel_one = discord.utils.get(all_channels, name=data[0][1])
+                channel_two = discord.utils.get(all_channels, name=data[0][2])
+                await channel_one.delete()                
+                await channel_two.delete()
+                cursor.execute(f"DELETE from setup WHERE guild_id={interaction.guild.id}")
+                await interaction.guild.create_text_channel(name=sup_ch_name)
+                support_channel = await interaction.guild.create_text_channel(name=sup_team_ch_name)
+                cursor.execute("INSERT INTO setup VALUES (?,?,?,?)", (interaction.guild.id, sup_ch_name, sup_team_ch_name, sup_role))
+                conn.commit()                
+
+        support_role = discord.utils.get(interaction.guild.roles, name=sup_role)
+        
+        for role in all_roles:
+            if role.name == support_role.name:
+                await support_channel.set_permissions(target=role, read_messages=True, send_messages=True)      
+            else:
+                await support_channel.set_permissions(target=role, read_messages=False, send_messages=False)
+                
+        await interaction.followup.send("Setup gespeichert!", ephemeral=True)
+            
+    
     @app_commands.command(name="support", description="Hilfe vom Support")
     async def support(self, interaction: discord.Interaction, reason: str = None):
         guild = interaction.guild
-        channel_create = False
         view = SupportButtons(reason)
         all_channels = await guild.fetch_channels()
-        
-        for channel in all_channels:
-            if channel.name != "support":
-                channel_create = True
-            else:
-                channel_create = False
-                break
-            
-        if channel_create:
-            sup_channel = await guild.create_text_channel(name="support")
-        else:
-            sup_channel = discord.utils.get(all_channels, name="support")
-            
-        if interaction.channel == sup_channel:
-            await interaction.response.send_message(embed=discord.Embed(title="Support", description="Willst du sicher ein Ticket eröffnen?", colour=6702), view=view, ephemeral=True, delete_after=15.0)
-        else:
-            await interaction.response.send_message(embed=discord.Embed(title=f"Geh in den {sup_channel.mention} channel um Hilfe zu bekommen.", description="Diese Nachricht wird in kürze automatisch gelöscht...", colour=6702), ephemeral=True, delete_after=8.0)
-            
-        sent_msg = await interaction.original_response()
-        support_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
+
+        with sqlite3.connect("supportsystem_setup.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute(f"SELECT guild_id from setup WHERE guild_id={interaction.guild.id}")
+            if not cursor.fetchall():
+                await interaction.response.send_message(embed=discord.Embed(title="Fehler:", description="Es wurde noch kein Setup gemacht. Führe dazu /support_setup aus.", colour=6702), ephemeral=True, delete_after=10.0)
+            else:   
+                cursor.execute("SELECT * from setup")
+                for data in cursor.fetchall():
+                    if data[0] == interaction.guild.id:
+                        sup_ch_name = data[1]
+                
+                sup_channel = discord.utils.get(all_channels, name=sup_ch_name)
+                    
+                if interaction.channel == sup_channel:
+                    await interaction.response.send_message(embed=discord.Embed(title="Support", description="Willst du sicher ein Ticket eröffnen?", colour=6702), view=view, ephemeral=True, delete_after=15.0)
+                else:
+                    await interaction.response.send_message(embed=discord.Embed(title=f"Geh in den {sup_channel.mention} channel um Hilfe zu bekommen.", description="Diese Nachricht wird in kürze automatisch gelöscht...", colour=6702), ephemeral=True, delete_after=8.0)
+                    
+                sent_msg = await interaction.original_response()
+                support_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
         
     
     @app_commands.command(name="closeticket", description="Nur für Support-Mitglieder")
@@ -138,7 +176,13 @@ class BasicCommands(commands.Cog):
         user = interaction.user
         view = CloseTicketButtons()
         user_sup_role = user.get_role(sup_role.id)
-        
+
+        with sqlite3.connect("supportsystem_setup.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * from setup")
+            for data in cursor.fetchall():
+                if data[0] == interaction.guild.id:
+                    sup_role = discord.utils.get(all_roles, name=data[3])
         if user_sup_role:
             await interaction.response.send_message(embed=discord.Embed(title="Ticket sicher schließen?", description="Dieser Channel wird gelöscht. Fortfahren?", colour=6702), view=view, ephemeral=True, delete_after=10.0)
         else:
