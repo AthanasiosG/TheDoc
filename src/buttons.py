@@ -169,8 +169,10 @@ class CloseTicketButtons(discord.ui.View):
         
         if user_sup_role:
             channel = interaction.channel
-            await channel.delete()    
-                         
+            if channel.name.startswith("support-"):
+                await channel.delete()    
+            else:
+                await interaction.response.send_message("**Fehler**\nDieser Befehl kann nicht in diesem Channel benutzt werden.", ephemeral=True, delete_after=8.0)
 
 
 class ChoseRole(discord.ui.View):
