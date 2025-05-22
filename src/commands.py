@@ -110,7 +110,7 @@ class BasicCommands(commands.Cog):
         await interaction.response.defer(ephemeral=True)       
         with sqlite3.connect("supportsystem_setup.db") as conn:
             cursor = conn.cursor()
-            cursor.execute(f"SELECT guild_id from setup WHERE guild_id={interaction.guild.id}")
+            cursor.execute("SELECT guild_id FROM setup WHERE guild_id=?", (interaction.guild.id,))
             if not cursor.fetchall():
                 await interaction.guild.create_text_channel(name=sup_ch_name)
                 support_channel = await interaction.guild.create_text_channel(name=sup_team_ch_name)
@@ -125,7 +125,7 @@ class BasicCommands(commands.Cog):
                 channel_two = discord.utils.get(all_channels, name=cur_data[2])
                 await channel_one.delete()                
                 await channel_two.delete()
-                cursor.execute(f"DELETE from setup WHERE guild_id={interaction.guild.id}")
+                cursor.execute("SELECT guild_id FROM setup WHERE guild_id=?", (interaction.guild.id,))
                 await interaction.guild.create_text_channel(name=sup_ch_name)
                 support_channel = await interaction.guild.create_text_channel(name=sup_team_ch_name)
                 cursor.execute("INSERT INTO setup VALUES (?,?,?,?)", (interaction.guild.id, sup_ch_name, sup_team_ch_name, sup_role))
@@ -150,7 +150,7 @@ class BasicCommands(commands.Cog):
 
         with sqlite3.connect("supportsystem_setup.db") as conn:
             cursor = conn.cursor()
-            cursor.execute(f"SELECT guild_id from setup WHERE guild_id={interaction.guild.id}")
+            cursor.execute("SELECT guild_id FROM setup WHERE guild_id=?", (interaction.guild.id,))
             if not cursor.fetchall():
                 await interaction.response.send_message(embed=discord.Embed(title="Fehler:", description="Es wurde noch kein Setup gemacht. Führe dazu /support_setup aus.", colour=6702), ephemeral=True, delete_after=10.0)
             else:   
@@ -205,7 +205,7 @@ class BasicCommands(commands.Cog):
         
         with sqlite3.connect("rolesystem.db") as conn:
             cursor = conn.cursor()
-            cursor.execute(f"SELECT * from role_setup WHERE guild_id={interaction.guild.id} ")     
+            cursor.execute("SELECT * from role_setup WHERE guild_id=?", (interaction.guild.id,))     
             for data in cursor.fetchall():
                 role_emoji += f"{data[1]}: {data[2]}\n"        
             server_found = False

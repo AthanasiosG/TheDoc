@@ -69,7 +69,7 @@ async def on_message(msg):
         msg_list.pop(0)
         with sqlite3.connect("rolesystem.db") as conn:
             cursor = conn.cursor()
-            cursor.execute(f"DELETE from role_setup WHERE guild_id={msg.guild.id}")
+            cursor.execute("DELETE from role_setup WHERE guild_id=?",(msg.guild.id,))
             for role_emoji_pair in msg_list:
                 pair = ""
                 for char in role_emoji_pair:
@@ -91,7 +91,7 @@ async def on_message(msg):
             user_id = msg.author.id
             cursor.execute("INSERT INTO violation VALUES (?,?)", (guild_id, user_id))
             conn.commit()
-            cursor.execute(f"SELECT * FROM violation WHERE guild_id={guild_id} AND user_id = {user_id}")
+            cursor.execute("SELECT * FROM violation WHERE guild_id=? AND user_id=?", (guild_id, user_id))
             all_violations = cursor.fetchall()
             if len(all_violations) > 0 and len(all_violations) <= 2:
                 user = await msg.guild.fetch_member(user_id)
@@ -100,7 +100,7 @@ async def on_message(msg):
                 user = await msg.guild.fetch_member(user_id)
                 await msg.guild.kick(user=user)
                 await user.send(embed=discord.Embed(title="GEKICKT!", description="Du wurdest aufgrund von zu vielen Verstoßen gekickt!", colour=6702)) 
-                cursor.execute(f"DELETE from violation WHERE guild_id = {guild_id} AND user_id = {user_id}")
+                cursor.execute("SELECT * FROM violation WHERE guild_id=? AND user_id=?", (guild_id, user_id))
 
                                
 client.run(TOKEN)

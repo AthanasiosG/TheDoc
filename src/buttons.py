@@ -45,6 +45,7 @@ class SupportButtons(discord.ui.View):
         super().__init__(timeout=timeout)
         self.reason = reason
 
+
     @discord.ui.button(style=discord.ButtonStyle.green, label="Yes", disabled=False)
     async def yes(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
@@ -99,7 +100,6 @@ class SupportTeamButtons(discord.ui.View):
         self.user_id = user_id
 
 
-
     @discord.ui.button(style=discord.ButtonStyle.green, label="Open", disabled=False)
     async def open(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
@@ -127,7 +127,6 @@ class SupportTeamButtons(discord.ui.View):
 
         await asyncio.sleep(15)
         await msg.delete()
-
 
 
     @discord.ui.button(style=discord.ButtonStyle.red, label="Close", disabled=False)
