@@ -155,18 +155,23 @@ class BasicCommands(commands.Cog):
     @app_commands.command(name="rollenauswahl", description="Wähle die Rollen, die du haben möchtest.")
     async def chose_role(self, interaction: discord.Interaction):
         view = ChoseRole(interaction)
+        role_emoji = ""
         
         with sqlite3.connect("rolesystem.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * from role_setup")            
+            cursor.execute(f"SELECT * from role_setup WHERE guild_id={interaction.guild.id} ")     
+            for data in cursor.fetchall():
+                role_emoji += f"{data[1]}: {data[2]}\n"        
             server_found = False
-            for i in cursor.fetchall():
-                if interaction.guild.id == i[0]:
+            cursor.execute("SELECT * from role_setup")  
+            for data in cursor.fetchall():
+                if interaction.guild.id == data[0]:
                     server_found = True
             if server_found:
-                await interaction.response.send_message(embed=discord.Embed(title=f"Wähle deine Rollen:", colour=6702), view=view, ephemeral=True)
+                await interaction.response.send_message(embed=discord.Embed(title=f"Wähle deine Rollen:", description=role_emoji, colour=6702), view=view, ephemeral=True)
+                role_emoji = ""
             else:
-                await interaction.response.send_message(embed=discord.Embed(title=f"Noch kein Rollen-Setup gemacht -> /rollensetup", colour=6702), view=view, ephemeral=True, delete_after=10.0)
+                await interaction.response.send_message(embed=discord.Embed(title=f"Noch kein Rollen-Setup gemacht -> /rollensetup", colour=6702), ephemeral=True, delete_after=10.0)
                 
                 
     @app_commands.command(name="to_do", description="Setzt Erinnerung in x Min.")

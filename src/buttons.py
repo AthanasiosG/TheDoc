@@ -182,10 +182,10 @@ class ChoseRole(discord.ui.View):
         with sqlite3.connect("rolesystem.db") as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * from role_setup")            
-            for i in cursor.fetchall():
-                if self.guild_id == i[0]:
-                    role = i[1]
-                    emoji = i[2]
+            for data in cursor.fetchall():
+                if self.guild_id == data[0]:
+                    role = data[1]
+                    emoji = data[2]
                     button = discord.ui.Button(style=discord.ButtonStyle.primary, label=emoji, disabled=False)
                     button.callback = self.handle_button(role)
                     self.add_item(button)

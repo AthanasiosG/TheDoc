@@ -64,11 +64,12 @@ async def on_message(msg):
     if msg.author.bot:
         return
     
-    if msg.content.startswith("!rollensetup"):
+    if msg.content.startswith("!rollensetup") and msg.author.guild_permissions.administrator:
         msg_list = msg.content.split()
         msg_list.pop(0)
         with sqlite3.connect("rolesystem.db") as conn:
             cursor = conn.cursor()
+            cursor.execute(f"DELETE from role_setup WHERE guild_id={msg.guild.id}")
             for role_emoji_pair in msg_list:
                 pair = ""
                 for char in role_emoji_pair:
@@ -79,7 +80,6 @@ async def on_message(msg):
                 role_name, emoji = pair.split()
                 cursor.execute("INSERT OR IGNORE INTO role_setup VALUES (?, ?, ?)", (msg.guild.id, role_name, emoji))
                 conn.commit()
-            cursor.execute("SELECT * FROM role_setup")
         await msg.channel.send("Daten gespeichert.", delete_after=5.0)
         await msg.delete()
            
