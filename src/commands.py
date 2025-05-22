@@ -118,9 +118,11 @@ class BasicCommands(commands.Cog):
                 conn.commit()
             else:
                 cursor.execute("SELECT * from setup")
-                data = cursor.fetchall()
-                channel_one = discord.utils.get(all_channels, name=data[0][1])
-                channel_two = discord.utils.get(all_channels, name=data[0][2])
+                for data in cursor.fetchall():
+                    if data[0] == interaction.guild.id:
+                        cur_data = data
+                channel_one = discord.utils.get(all_channels, name=cur_data[1])
+                channel_two = discord.utils.get(all_channels, name=cur_data[2])
                 await channel_one.delete()                
                 await channel_two.delete()
                 cursor.execute(f"DELETE from setup WHERE guild_id={interaction.guild.id}")
