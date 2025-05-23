@@ -61,3 +61,16 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS blacklist(
 
 conn.commit()
 conn.close()
+
+
+
+conn = sqlite3.connect("kicked_user.db")
+cursor = conn.cursor()
+
+cursor.execute("""CREATE TABLE IF NOT EXISTS server_kicked(
+    user_id INTEGER NOT NULL
+    )
+""")
+
+conn.commit()
+conn.close()
