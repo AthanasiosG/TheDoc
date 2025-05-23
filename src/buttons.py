@@ -52,12 +52,12 @@ class SupportButtons(discord.ui.View):
         user_id = interaction.user.id
         all_channels = await guild.fetch_channels()
         
-        with sqlite3.connect("supportsystem_setup.db") as conn:
+        with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM setup")
-            for data in cursor.fetchall():
-                if data[0] == interaction.guild.id:
-                    sup_team_ch_name = data[2]        
+            cursor.execute("SELECT * FROM setup WHERE guild_id = ?", (interaction.guild.id,))
+            data = cursor.fetchone()
+            if data:
+                sup_team_ch_name = data[2]
         
         view = SupportTeamButtons(user_id)
         support_role = discord.utils.get(guild.roles, name="Support")
@@ -170,10 +170,10 @@ class ChoseRole(discord.ui.View):
         self.interaction = interaction
         self.guild_id = interaction.guild.id
         
-        with sqlite3.connect("rolesystem.db") as conn:
+        with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM role_setup")            
-            for data in cursor.fetchall():
+            cursor.execute("SELECT * FROM role_setup WHERE guild_id = ?", (self.guild_id,))
+            for data in cursor.fetchall():          
                 if self.guild_id == data[0]:
                     role = data[1]
                     emoji = data[2]

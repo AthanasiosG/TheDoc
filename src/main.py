@@ -35,7 +35,7 @@ async def on_guild_join(guild: discord.Guild):
 async def on_member_join(member):
     if not member.bot:
         guild = member.guild
-        with sqlite3.connect("kicked_user.db") as conn:
+        with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
             cursor.execute("DELETE FROM server_kicked WHERE user_id=?", (member.id,))
         await member.send(embed=discord.Embed(title=f"Willkommen auf dem Server **{guild}**!", colour=6702)) 
@@ -47,7 +47,7 @@ async def on_member_remove(member):
     all_channels = await guild.fetch_channels()
     is_user_kicked = False
     
-    with sqlite3.connect("kicked_user.db") as conn:
+    with sqlite3.connect("database.db") as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT user_id FROM server_kicked")
         for data in cursor.fetchall():
@@ -92,7 +92,7 @@ async def on_message(msg):
     if msg.content.startswith("!rollensetup") and msg.author.guild_permissions.administrator:
         msg_list = msg.content.split()
         msg_list.pop(0)
-        with sqlite3.connect("rolesystem.db") as conn:
+        with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
             cursor.execute("DELETE FROM role_setup WHERE guild_id=?",(msg.guild.id,))
             for role_emoji_pair in msg_list:
@@ -109,13 +109,13 @@ async def on_message(msg):
         await msg.delete()
            
     if not msg.author.bot and msg.content:
-        with sqlite3.connect("blocked_words.db") as connection:
+        with sqlite3.connect("database.db") as connection:
             cursor = connection.cursor()
             cursor.execute("SELECT word FROM blacklist WHERE guild_id=?", (msg.guild.id,))
             blacklisted_words = [data[0] for data in cursor.fetchall()]
         if msg.content in blacklisted_words:
             await msg.delete()
-            with sqlite3.connect("auto_warn_system.db") as conn:
+            with sqlite3.connect("database.db") as conn:
                 c = conn.cursor()
                 guild_id, user_id = msg.guild.id, msg.author.id
                 c.execute("INSERT INTO violation (guild_id, user_id) VALUES (?, ?)", (guild_id, user_id))
@@ -128,7 +128,7 @@ async def on_message(msg):
             elif violations == 3:
                 await msg.guild.kick(user)
                 await user.send(embed=discord.Embed(title="GEKICKT!", description="Du wurdest aufgrund von zu vielen Verstößen gekickt!", colour=6702))
-                with sqlite3.connect("kicked_user.db") as co:
+                with sqlite3.connect("database.db") as co:
                     cur = co.cursor()
                     cur.execute("INSERT INTO server_kicked (user_id) VALUES (?)", (user.id,))
                     co.commit()                              
