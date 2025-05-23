@@ -102,7 +102,7 @@ class BasicCommands(commands.Cog):
         await interaction.response.send_message(embed=discord.Embed(title=coin, colour=6702))
 
 
-    @app_commands.command(name="support_setup", description="Das Setup um das Supportsystem benutzen zu können.")
+    @app_commands.command(name="support_setup", description="Das Setup um das Supportsystem benutzen zu können")
     @app_commands.checks.has_permissions(administrator=True)
     async def sup_setup(self, interaction: discord.Interaction, sup_ch_name: str, sup_team_ch_name: str, sup_role: str):        
         all_channels = await interaction.guild.fetch_channels()        
@@ -198,7 +198,7 @@ class BasicCommands(commands.Cog):
         await interaction.response.send_message(embed=discord.Embed(title="Schau in deinen DMs.",description="Ich habe dir eine Anleitung geschickt.", colour=6702), ephemeral=True, delete_after=8.0)
         
         
-    @app_commands.command(name="rollenauswahl", description="Wähle die Rollen, die du haben möchtest.")
+    @app_commands.command(name="rollenauswahl", description="Wähle die Rollen, die du haben möchtest")
     async def chose_role(self, interaction: discord.Interaction):
         view = ChoseRole(interaction)
         role_emoji = ""
@@ -220,7 +220,7 @@ class BasicCommands(commands.Cog):
                 await interaction.response.send_message(embed=discord.Embed(title=f"Noch kein Rollen-Setup gemacht -> /rollensetup", colour=6702), ephemeral=True, delete_after=10.0)
                 
                 
-    @app_commands.command(name="to_do", description="Setzt Erinnerung in x Min.")
+    @app_commands.command(name="to_do", description="Setzt Erinnerung in x Min")
     async def to_do(self, interaction: discord.Interaction, todo: str, timer: int):
         timer *= 60
         await interaction.response.defer(ephemeral=True)
@@ -230,3 +230,51 @@ class BasicCommands(commands.Cog):
             timer -= 1
             
         await interaction.user.send(embed=discord.Embed(title="Erinnerung!", description=todo, colour=6702))
+        
+        
+    @app_commands.command(name="blacklist", description="Zeigt die gesamt Blacklist an")
+    async def blacklist(self, interaction: discord.Interaction):
+        all_words = ""
+        
+        with sqlite3.connect("blocked_words.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * from blacklist")
+            for data in cursor.fetchall():
+                if data[0] == interaction.guild.id:
+                    all_words += f"{data[1]}\n"
+            await interaction.response.send_message(embed=discord.Embed(title="Alle blockierten Wörter:", description=all_words, colour=6702), delete_after=15.0)
+        
+        
+    @app_commands.command(name="blacklist_add", description="Fügt ein Wort zur Blacklist hinzu")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def blacklist_add(self, interaction: discord.Interaction, word: str):
+        await interaction.response.defer(ephemeral=True)
+        
+        with sqlite3.connect("blocked_words.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * from blacklist")
+            word_found = False
+            for data in cursor.fetchall():
+                if data[1] == word:
+                    await interaction.followup.send("Dieses Wort ist schon auf der Blacklist.")
+                    word_found = True
+                    break
+            if not word_found:
+                cursor.execute("INSERT INTO blacklist VALUES (?,?)", (interaction.guild.id, word))
+                conn.commit()
+                await interaction.followup.send(f"{word} wurde zur Blacklist hinzugefügt!", ephemeral=True)
+                    
+            
+    @app_commands.command(name="blacklist_remove", description="Entfernt ein Wort aus der Blacklist")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def blacklist_remove(self, interaction: discord.Interaction, word: str):
+        await interaction.response.defer(ephemeral=True)
+        
+        with sqlite3.connect("blocked_words.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * from blacklist")
+            for data in cursor.fetchall():
+                if data[0] == interaction.guild.id:
+                    cursor.execute("DELETE from blacklist WHERE word=?", (word,))
+                    conn.commit()
+            await interaction.followup.send(f"{word} wurde aus der Blacklist entfernt!", ephemeral=True)

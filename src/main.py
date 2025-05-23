@@ -10,7 +10,7 @@ client = commands.Bot(command_prefix="=", intents=intents)
 
 load_dotenv() 
 TOKEN = os.getenv("DISCORD_TOKEN")
-blocked_words = os.getenv("BLOCKED_WORDS")
+
 
 @client.event
 async def on_ready():
@@ -49,7 +49,6 @@ async def on_member_remove(member):
             await member.send(embed=discord.Embed(title=f"Du hast **{guild}** verlassen:", description="Falls das ausversehen war, dann kannst du über diesen Link erneut joinen!", colour=6702, url=invite))
             break
         
-    
     
 @client.event
 async def on_voice_state_update(member, before, after):  
@@ -96,25 +95,29 @@ async def on_message(msg):
                 conn.commit()
         await msg.channel.send("Daten gespeichert.", delete_after=5.0)
         await msg.delete()
-           
-    if msg.content and msg.content in blocked_words and not msg.author.bot:
-        await msg.delete()
-        with sqlite3.connect("auto_warn_system.db") as conn:
-            cursor = conn.cursor()
-            guild_id = msg.guild.id
-            user_id = msg.author.id
-            cursor.execute("INSERT INTO violation VALUES (?,?)", (guild_id, user_id))
-            conn.commit()
-            cursor.execute("SELECT * FROM violation WHERE guild_id=? AND user_id=?", (guild_id, user_id))
-            all_violations = cursor.fetchall()
-            if len(all_violations) > 0 and len(all_violations) <= 2:
-                user = await msg.guild.fetch_member(user_id)
-                await user.send(embed=discord.Embed(title="VERWARNUNG!", description="Bei weiteren Verstoßen wirst du vom Server gekickt!", colour=6702))
-            elif len(all_violations) == 3:
-                user = await msg.guild.fetch_member(user_id)
-                await msg.guild.kick(user=user)
-                await user.send(embed=discord.Embed(title="GEKICKT!", description="Du wurdest aufgrund von zu vielen Verstoßen gekickt!", colour=6702)) 
-                cursor.execute("SELECT * FROM violation WHERE guild_id=? AND user_id=?", (guild_id, user_id))
+    
+    with sqlite3.connect("blocked_words.db") as connection:
+        cursor = connection.cursor()
+        cursor.execute("SELECT * from blacklist")
+        for data in c.fetchall():
+            if data[0] == msg.guild.id and msg.content and msg.content == data[1] and not msg.author.bot:
+                    await msg.delete()
+                    with sqlite3.connect("auto_warn_system.db") as conn:
+                        c = conn.cursor()
+                        guild_id = msg.guild.id
+                        user_id = msg.author.id
+                        c.execute("INSERT INTO violation VALUES (?,?)", (guild_id, user_id))
+                        conn.commit()
+                        c.execute("SELECT * FROM violation WHERE guild_id=? AND user_id=?", (guild_id, user_id))
+                        all_violations = c.fetchall()
+                        if len(all_violations) > 0 and len(all_violations) <= 2:
+                            user = await msg.guild.fetch_member(user_id)
+                            await user.send(embed=discord.Embed(title="VERWARNUNG!", description="Bei weiteren Verstoßen wirst du vom Server gekickt!", colour=6702))
+                        elif len(all_violations) == 3:
+                            user = await msg.guild.fetch_member(user_id)
+                            await msg.guild.kick(user=user)
+                            await user.send(embed=discord.Embed(title="GEKICKT!", description="Du wurdest aufgrund von zu vielen Verstoßen gekickt!", colour=6702)) 
+                            c.execute("SELECT * FROM violation WHERE guild_id=? AND user_id=?", (guild_id, user_id))
 
                                
 client.run(TOKEN)
