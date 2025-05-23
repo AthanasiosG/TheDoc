@@ -53,11 +53,11 @@ class BasicCommands(commands.Cog):
         owner = interaction.guild.owner
         await interaction.response.send_message(embed=discord.Embed(title="Der Server gehört " + str(owner) +"!", colour=6702))
 
-        
+
     @app_commands.command(name="kick", description="Einen User kicken")
     @app_commands.checks.has_permissions(administrator=True)
     async def kick(self, interaction: discord.Interaction, user: discord.User, reason: str):
-        with sqlite3.connect("kicked_user.db") as conn:
+        with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
             cursor.execute("INSERT INTO server_kicked VALUES (?)", (user.id,))
             conn.commit()
@@ -68,7 +68,6 @@ class BasicCommands(commands.Cog):
         await interaction.user.send(embed=discord.Embed(title=msg, description="Grund: " + reason, color=discord.Color.red()))
         await interaction.response.defer(ephemeral=True)        
         await interaction.followup.send(f"Vorgang abgeschlossen. User gekickt.", ephemeral=True)
-        
 
 
     @app_commands.command(name="ban", description="Einen User bannen")
@@ -81,7 +80,7 @@ class BasicCommands(commands.Cog):
         await interaction.response.defer(ephemeral=True)        
         await interaction.followup.send(f"Vorgang abgeschlossen. User gebannt.", ephemeral=True)
 
-        with sqlite3.connect("kicked_user.db") as conn:
+        with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
             cursor.execute("INSERT INTO server_kicked VALUES (?)", (user.id,))
             conn.commit()
@@ -119,7 +118,7 @@ class BasicCommands(commands.Cog):
         all_channels = await interaction.guild.fetch_channels()        
         all_roles = await interaction.guild.fetch_roles()
         await interaction.response.defer(ephemeral=True)       
-        with sqlite3.connect("supportsystem_setup.db") as conn:
+        with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT guild_id FROM setup WHERE guild_id=?", (interaction.guild.id,))
             if not cursor.fetchall():
@@ -136,7 +135,7 @@ class BasicCommands(commands.Cog):
                 channel_two = discord.utils.get(all_channels, name=cur_data[2])
                 await channel_one.delete()                
                 await channel_two.delete()
-                cursor.execute("SELECT guild_id FROM setup WHERE guild_id=?", (interaction.guild.id,))
+                cursor.execute("DELETE FROM setup WHERE guild_id=?", (interaction.guild.id,))
                 await interaction.guild.create_text_channel(name=sup_ch_name)
                 support_channel = await interaction.guild.create_text_channel(name=sup_team_ch_name)
                 cursor.execute("INSERT INTO setup VALUES (?,?,?,?)", (interaction.guild.id, sup_ch_name, sup_team_ch_name, sup_role))
@@ -152,14 +151,14 @@ class BasicCommands(commands.Cog):
                 
         await interaction.followup.send("Setup gespeichert!", ephemeral=True)
             
-    
+            
     @app_commands.command(name="support", description="Hilfe vom Support")
     async def support(self, interaction: discord.Interaction, reason: str = None):
         guild = interaction.guild
         view = SupportButtons(reason)
         all_channels = await guild.fetch_channels()
 
-        with sqlite3.connect("supportsystem_setup.db") as conn:
+        with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT guild_id FROM setup WHERE guild_id=?", (interaction.guild.id,))
             if not cursor.fetchall():
@@ -169,18 +168,15 @@ class BasicCommands(commands.Cog):
                 for data in cursor.fetchall():
                     if data[0] == interaction.guild.id:
                         sup_ch_name = data[1]
-                
                 sup_channel = discord.utils.get(all_channels, name=sup_ch_name)
-                    
                 if interaction.channel == sup_channel:
                     await interaction.response.send_message(embed=discord.Embed(title="Support", description="Willst du sicher ein Ticket eröffnen?", colour=6702), view=view, ephemeral=True, delete_after=15.0)
                 else:
                     await interaction.response.send_message(embed=discord.Embed(title=f"Geh in den {sup_channel.mention} channel um Hilfe zu bekommen.", description="Diese Nachricht wird in kürze automatisch gelöscht...", colour=6702), ephemeral=True, delete_after=8.0)
-                    
                 sent_msg = await interaction.original_response()
                 support_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
         
-    
+        
     @app_commands.command(name="closeticket", description="Nur für Support-Mitglieder")
     async def close_ticket(self, interaction: discord.Interaction):
         guild = interaction.guild
@@ -190,12 +186,13 @@ class BasicCommands(commands.Cog):
         view = CloseTicketButtons()
         user_sup_role = user.get_role(sup_role.id)
 
-        with sqlite3.connect("supportsystem_setup.db") as conn:
+        with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM setup")
             for data in cursor.fetchall():
                 if data[0] == interaction.guild.id:
                     sup_role = discord.utils.get(all_roles, name=data[3])
+                    
         if user_sup_role:
             await interaction.response.send_message(embed=discord.Embed(title="Ticket sicher schließen?", description="Dieser Channel wird gelöscht. Fortfahren?", colour=6702), view=view, ephemeral=True, delete_after=10.0)
         else:
@@ -214,7 +211,7 @@ class BasicCommands(commands.Cog):
         view = ChoseRole(interaction)
         role_emoji = ""
         
-        with sqlite3.connect("rolesystem.db") as conn:
+        with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM role_setup WHERE guild_id=?", (interaction.guild.id,))     
             for data in cursor.fetchall():
@@ -247,7 +244,7 @@ class BasicCommands(commands.Cog):
     async def blacklist(self, interaction: discord.Interaction):
         all_words = ""
         
-        with sqlite3.connect("blocked_words.db") as conn:
+        with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM blacklist")
             for data in cursor.fetchall():
@@ -261,7 +258,7 @@ class BasicCommands(commands.Cog):
     async def blacklist_add(self, interaction: discord.Interaction, word: str):
         await interaction.response.defer(ephemeral=True)
         
-        with sqlite3.connect("blocked_words.db") as conn:
+        with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM blacklist")
             word_found = False
@@ -275,17 +272,17 @@ class BasicCommands(commands.Cog):
                 conn.commit()
                 await interaction.followup.send(f"{word} wurde zur Blacklist hinzugefügt!", ephemeral=True)
                     
-            
+                    
     @app_commands.command(name="blacklist_remove", description="Entfernt ein Wort aus der Blacklist")
     @app_commands.checks.has_permissions(administrator=True)
     async def blacklist_remove(self, interaction: discord.Interaction, word: str):
         await interaction.response.defer(ephemeral=True)
         
-        with sqlite3.connect("blocked_words.db") as conn:
+        with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM blacklist")
             for data in cursor.fetchall():
                 if data[0] == interaction.guild.id:
-                    cursor.execute("DELETE FROM blacklist WHERE word=?", (word,))
+                    cursor.execute("DELETE FROM blacklist WHERE word=? AND guild_id=?", (word, interaction.guild.id))
                     conn.commit()
             await interaction.followup.send(f"{word} wurde aus der Blacklist entfernt!", ephemeral=True)
