@@ -54,7 +54,7 @@ class SupportButtons(discord.ui.View):
         
         with sqlite3.connect("supportsystem_setup.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * from setup")
+            cursor.execute("SELECT * FROM setup")
             for data in cursor.fetchall():
                 if data[0] == interaction.guild.id:
                     sup_team_ch_name = data[2]        
@@ -172,7 +172,7 @@ class ChoseRole(discord.ui.View):
         
         with sqlite3.connect("rolesystem.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * from role_setup")            
+            cursor.execute("SELECT * FROM role_setup")            
             for data in cursor.fetchall():
                 if self.guild_id == data[0]:
                     role = data[1]

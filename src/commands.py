@@ -57,12 +57,18 @@ class BasicCommands(commands.Cog):
     @app_commands.command(name="kick", description="Einen User kicken")
     @app_commands.checks.has_permissions(administrator=True)
     async def kick(self, interaction: discord.Interaction, user: discord.User, reason: str):
+        with sqlite3.connect("kicked_user.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO server_kicked VALUES (?)", (user.id,))
+            conn.commit()
+            
         await interaction.guild.kick(user=user, reason=reason)
-        await user.send(embed=discord.Embed(title="Du wurdest aus folgendem Grund gebannt:", description=reason, color=discord.Color.red()))
+        await user.send(embed=discord.Embed(title="Du wurdest aus folgendem Grund gekickt:", description=reason, color=discord.Color.red()))
         msg = f"{user} wurde erfolgreich gekickt!"
         await interaction.user.send(embed=discord.Embed(title=msg, description="Grund: " + reason, color=discord.Color.red()))
         await interaction.response.defer(ephemeral=True)        
         await interaction.followup.send(f"Vorgang abgeschlossen. User gekickt.", ephemeral=True)
+        
 
 
     @app_commands.command(name="ban", description="Einen User bannen")
@@ -74,6 +80,11 @@ class BasicCommands(commands.Cog):
         await interaction.user.send(embed=discord.Embed(title=msg, description="Grund: " + reason, color=discord.Color.red()))
         await interaction.response.defer(ephemeral=True)        
         await interaction.followup.send(f"Vorgang abgeschlossen. User gebannt.", ephemeral=True)
+
+        with sqlite3.connect("kicked_user.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO server_kicked VALUES (?)", (user.id,))
+            conn.commit()
 
 
     @app_commands.command(name="rollen", description="Alle verfügbaren rollen")
@@ -117,7 +128,7 @@ class BasicCommands(commands.Cog):
                 cursor.execute("INSERT INTO setup VALUES (?,?,?,?)", (interaction.guild.id, sup_ch_name, sup_team_ch_name, sup_role))
                 conn.commit()
             else:
-                cursor.execute("SELECT * from setup")
+                cursor.execute("SELECT * FROM setup")
                 for data in cursor.fetchall():
                     if data[0] == interaction.guild.id:
                         cur_data = data
@@ -154,7 +165,7 @@ class BasicCommands(commands.Cog):
             if not cursor.fetchall():
                 await interaction.response.send_message(embed=discord.Embed(title="Fehler:", description="Es wurde noch kein Setup gemacht. Führe dazu /support_setup aus.", colour=6702), ephemeral=True, delete_after=10.0)
             else:   
-                cursor.execute("SELECT * from setup")
+                cursor.execute("SELECT * FROM setup")
                 for data in cursor.fetchall():
                     if data[0] == interaction.guild.id:
                         sup_ch_name = data[1]
@@ -181,7 +192,7 @@ class BasicCommands(commands.Cog):
 
         with sqlite3.connect("supportsystem_setup.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * from setup")
+            cursor.execute("SELECT * FROM setup")
             for data in cursor.fetchall():
                 if data[0] == interaction.guild.id:
                     sup_role = discord.utils.get(all_roles, name=data[3])
@@ -205,11 +216,11 @@ class BasicCommands(commands.Cog):
         
         with sqlite3.connect("rolesystem.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * from role_setup WHERE guild_id=?", (interaction.guild.id,))     
+            cursor.execute("SELECT * FROM role_setup WHERE guild_id=?", (interaction.guild.id,))     
             for data in cursor.fetchall():
                 role_emoji += f"{data[1]}: {data[2]}\n"        
             server_found = False
-            cursor.execute("SELECT * from role_setup")  
+            cursor.execute("SELECT * FROM role_setup")  
             for data in cursor.fetchall():
                 if interaction.guild.id == data[0]:
                     server_found = True
@@ -238,7 +249,7 @@ class BasicCommands(commands.Cog):
         
         with sqlite3.connect("blocked_words.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * from blacklist")
+            cursor.execute("SELECT * FROM blacklist")
             for data in cursor.fetchall():
                 if data[0] == interaction.guild.id:
                     all_words += f"{data[1]}\n"
@@ -252,7 +263,7 @@ class BasicCommands(commands.Cog):
         
         with sqlite3.connect("blocked_words.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * from blacklist")
+            cursor.execute("SELECT * FROM blacklist")
             word_found = False
             for data in cursor.fetchall():
                 if data[1] == word:
@@ -272,9 +283,9 @@ class BasicCommands(commands.Cog):
         
         with sqlite3.connect("blocked_words.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * from blacklist")
+            cursor.execute("SELECT * FROM blacklist")
             for data in cursor.fetchall():
                 if data[0] == interaction.guild.id:
-                    cursor.execute("DELETE from blacklist WHERE word=?", (word,))
+                    cursor.execute("DELETE FROM blacklist WHERE word=?", (word,))
                     conn.commit()
             await interaction.followup.send(f"{word} wurde aus der Blacklist entfernt!", ephemeral=True)
