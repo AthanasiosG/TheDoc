@@ -54,7 +54,7 @@ class SupportButtons(discord.ui.View):
         
         with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM setup WHERE guild_id = ?", (interaction.guild.id,))
+            cursor.execute("SELECT * FROM sup_setup WHERE guild_id = ?", (interaction.guild.id,))
             data = cursor.fetchone()
             if data:
                 sup_team_ch_name = data[2]

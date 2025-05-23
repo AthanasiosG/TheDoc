@@ -117,38 +117,34 @@ class BasicCommands(commands.Cog):
     async def sup_setup(self, interaction: discord.Interaction, sup_ch_name: str, sup_team_ch_name: str, sup_role: str):        
         all_channels = await interaction.guild.fetch_channels()        
         all_roles = await interaction.guild.fetch_roles()
-        await interaction.response.defer(ephemeral=True)       
+        await interaction.response.defer(ephemeral=True)
+
         with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT guild_id FROM setup WHERE guild_id=?", (interaction.guild.id,))
-            if not cursor.fetchall():
-                await interaction.guild.create_text_channel(name=sup_ch_name)
-                support_channel = await interaction.guild.create_text_channel(name=sup_team_ch_name)
-                cursor.execute("INSERT INTO setup VALUES (?,?,?,?)", (interaction.guild.id, sup_ch_name, sup_team_ch_name, sup_role))
+            cursor.execute("SELECT * FROM sup_setup WHERE guild_id=?", (interaction.guild.id,))
+            data = cursor.fetchone()
+            if data:
+                channel_one = discord.utils.get(all_channels, name=data[1])
+                channel_two = discord.utils.get(all_channels, name=data[2])
+                if channel_one:
+                    await channel_one.delete()
+                if channel_two:
+                    await channel_two.delete()
+                cursor.execute("DELETE FROM sup_setup WHERE guild_id=?", (interaction.guild.id,))
                 conn.commit()
-            else:
-                cursor.execute("SELECT * FROM setup")
-                for data in cursor.fetchall():
-                    if data[0] == interaction.guild.id:
-                        cur_data = data
-                channel_one = discord.utils.get(all_channels, name=cur_data[1])
-                channel_two = discord.utils.get(all_channels, name=cur_data[2])
-                await channel_one.delete()                
-                await channel_two.delete()
-                cursor.execute("DELETE FROM setup WHERE guild_id=?", (interaction.guild.id,))
-                await interaction.guild.create_text_channel(name=sup_ch_name)
-                support_channel = await interaction.guild.create_text_channel(name=sup_team_ch_name)
-                cursor.execute("INSERT INTO setup VALUES (?,?,?,?)", (interaction.guild.id, sup_ch_name, sup_team_ch_name, sup_role))
-                conn.commit()                
+            await interaction.guild.create_text_channel(name=sup_ch_name)
+            support_team_channel = await interaction.guild.create_text_channel(name=sup_team_ch_name)
+            cursor.execute("INSERT INTO sup_setup VALUES (?,?,?,?)", (interaction.guild.id, sup_ch_name, sup_team_ch_name, sup_role))
+            conn.commit()
 
         support_role = discord.utils.get(interaction.guild.roles, name=sup_role)
-        
+
         for role in all_roles:
             if role.name == support_role.name:
-                await support_channel.set_permissions(target=role, read_messages=True, send_messages=True)      
+                await support_team_channel.set_permissions(target=role, read_messages=True, send_messages=True)      
             else:
-                await support_channel.set_permissions(target=role, read_messages=False, send_messages=False)
-                
+                await support_team_channel.set_permissions(target=role, read_messages=False, send_messages=False)
+
         await interaction.followup.send("Setup gespeichert!", ephemeral=True)
             
             
@@ -160,11 +156,11 @@ class BasicCommands(commands.Cog):
 
         with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT guild_id FROM setup WHERE guild_id=?", (interaction.guild.id,))
+            cursor.execute("SELECT guild_id FROM sup_setup WHERE guild_id=?", (interaction.guild.id,))
             if not cursor.fetchall():
                 await interaction.response.send_message(embed=discord.Embed(title="Fehler:", description="Es wurde noch kein Setup gemacht. Führe dazu /support_setup aus.", colour=6702), ephemeral=True, delete_after=10.0)
             else:   
-                cursor.execute("SELECT * FROM setup")
+                cursor.execute("SELECT * FROM sup_setup")
                 for data in cursor.fetchall():
                     if data[0] == interaction.guild.id:
                         sup_ch_name = data[1]
@@ -188,7 +184,7 @@ class BasicCommands(commands.Cog):
 
         with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM setup")
+            cursor.execute("SELECT * FROM sup_setup")
             for data in cursor.fetchall():
                 if data[0] == interaction.guild.id:
                     sup_role = discord.utils.get(all_roles, name=data[3])
