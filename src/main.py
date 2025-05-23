@@ -23,10 +23,10 @@ async def on_guild_join(guild: discord.Guild):
     all_channels = await guild.fetch_channels()
     
     for channel in all_channels:
-        if channel.name in ["Willkommen", "Welcome"]:
+        if channel.name.lower() in ["willkommen", "welcome"]:
             await channel.send(embed=discord.Embed(title="Hallo! Ich bin TheDoc 😊", description="Mit /all_commands findet ihr alle verfügbaren Commands!", colour=6702))
             break
-        elif channel.name in ["general", "chat", "allgemein"]:
+        elif channel.name.lower() in ["general", "chat", "allgemein"]:
             await channel.send(embed=discord.Embed(title="Hallo! Ich bin TheDoc 😊", description="Mit /all_commands findet ihr alle verfügbaren Commands!", colour=6702))
             break
         
@@ -34,7 +34,21 @@ async def on_guild_join(guild: discord.Guild):
 @client.event
 async def on_member_join(member):
     if not member.bot:
-        await member.send(embed=discord.Embed(title="Willkommen auf dem Server", colour=6702))       
+        guild = member.guild
+        await member.send(embed=discord.Embed(title=f"Willkommen auf dem Server **{guild}**!", colour=6702)) 
+              
+    
+@client.event
+async def on_member_remove(member):
+    guild = member.guild
+    all_channels = await guild.fetch_channels()
+    
+    for channel in all_channels:
+        if channel.name.lower() in ["willkommen", "welcome"] and isinstance(channel, discord.TextChannel):
+            invite = await channel.create_invite(max_age=86400, max_uses=1, unique=True)
+            await member.send(embed=discord.Embed(title=f"Du hast **{guild}** verlassen:", description="Falls das ausversehen war, dann kannst du über diesen Link erneut joinen!", colour=6702, url=invite))
+            break
+        
     
     
 @client.event
