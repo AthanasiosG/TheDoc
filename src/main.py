@@ -109,29 +109,27 @@ async def on_message(msg):
         await msg.delete()
            
     if not msg.author.bot and msg.content:
-        with sqlite3.connect("database.db") as connection:
-            cursor = connection.cursor()
+        with sqlite3.connect("database.db") as conn:
+            cursor = conn.cursor()
             cursor.execute("SELECT word FROM blacklist WHERE guild_id=?", (msg.guild.id,))
             blacklisted_words = [data[0] for data in cursor.fetchall()]
         if msg.content in blacklisted_words:
             await msg.delete()
-            with sqlite3.connect("database.db") as conn:
-                c = conn.cursor()
-                guild_id, user_id = msg.guild.id, msg.author.id
-                c.execute("INSERT INTO violation (guild_id, user_id) VALUES (?, ?)", (guild_id, user_id))
-                conn.commit()
-                c.execute("SELECT COUNT(*) FROM violation WHERE guild_id=? AND user_id=?", (guild_id, user_id))
-                violations = c.fetchone()[0]
+            guild_id, user_id = msg.guild.id, msg.author.id
+            cursor.execute("INSERT INTO violation (guild_id, user_id) VALUES (?, ?)", (guild_id, user_id))
+            conn.commit()
+            cursor.execute("SELECT COUNT(*) FROM violation WHERE guild_id=? AND user_id=?", (guild_id, user_id))
+            violations = cursor.fetchone()[0]
             user = await msg.guild.fetch_member(user_id)
             if violations <= 2:
                 await user.send(embed=discord.Embed(title="VERWARNUNG!", description="Bei weiteren Verstößen wirst du vom Server gekickt!",colour=6702))
             elif violations == 3:
+                cursor.execute("INSERT INTO server_kicked (user_id) VALUES (?)", (user.id,))
+                conn.commit()                             
                 await msg.guild.kick(user)
                 await user.send(embed=discord.Embed(title="GEKICKT!", description="Du wurdest aufgrund von zu vielen Verstößen gekickt!", colour=6702))
-                with sqlite3.connect("database.db") as co:
-                    cur = co.cursor()
-                    cur.execute("INSERT INTO server_kicked (user_id) VALUES (?)", (user.id,))
-                    co.commit()                              
+                cursor.execute("DELETE FROM violation WHERE guild_id=? AND user_id=?", (msg.guild.id, user.id))
+                conn.commit() 
 
 
 client.run(TOKEN)
