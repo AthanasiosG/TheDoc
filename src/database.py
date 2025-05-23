@@ -19,6 +19,7 @@ conn.commit()
 conn.close()
 
 
+
 conn = sqlite3.connect("auto_warn_system.db")
 cursor = conn.cursor()
 
@@ -28,9 +29,9 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS violation(
     )
 """)
 
-
 conn.commit()
 conn.close()
+
 
 
 conn = sqlite3.connect("supportsystem_setup.db")
@@ -44,7 +45,19 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS setup(
     )
 """)
 
+conn.commit()
+conn.close()
 
+
+
+conn = sqlite3.connect("blocked_words.db")
+cursor = conn.cursor()
+
+cursor.execute("""CREATE TABLE IF NOT EXISTS blacklist(
+    guild_id INTEGER NOT NULL,
+    word TEXT NOT NULL
+    )
+""")
 
 conn.commit()
 conn.close()
