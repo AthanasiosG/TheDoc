@@ -21,7 +21,7 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS violation(
     )
 """)
 
-cursor.execute("""CREATE TABLE IF NOT EXISTS setup(
+cursor.execute("""CREATE TABLE IF NOT EXISTS sup_setup(
     guild_id INTEGER NOT NULL,
     sup_ch_name TEXT NOT NULL,
     sup_team_ch_name TEXT NOT NULL,
