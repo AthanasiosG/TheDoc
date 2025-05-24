@@ -1,4 +1,4 @@
-import discord, os, sqlite3
+import discord, os, sqlite3, database
 from discord.ext import commands
 from discord import app_commands
 from dotenv import load_dotenv
