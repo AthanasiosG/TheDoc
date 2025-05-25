@@ -1,5 +1,6 @@
 import discord, sqlite3, asyncio
 from database import support_db, bot_msg_db
+from mini_games import save_tictactoe_board, load_tictactoe_board, delete_tictactoe_board, is_board_game_over, get_updated_board, get_winner, bot_num
 
 
 class VerifyButtons(discord.ui.View):
@@ -196,3 +197,208 @@ class ChoseRole(discord.ui.View):
                 await interaction.response.send_message(embed=discord.Embed(title=f"Rolle **{role_name}** entfernt!", colour=6702), ephemeral=True, delete_after=8.0)
                 
         return handle
+    
+
+
+class ChooseTicTacToeEnemy(discord.ui.View):
+    def __init__(self, *, timeout = None):
+        super().__init__(timeout=timeout)
+        
+        
+    @discord.ui.button(label="Player", style=discord.ButtonStyle.green, disabled=False)
+    async def player(self, interaction: discord.Interaction, button: discord.ui.Button):
+        view = TicTacToeReady()
+        user_id = interaction.user.id
+        
+        if user_id in bot_msg_db:
+            channel_id, message_id = bot_msg_db[user_id]
+            channel = interaction.client.get_channel(channel_id)
+            try:
+                message = await channel.fetch_message(message_id)
+                await message.delete()
+                del bot_msg_db[user_id]
+            except discord.NotFound:
+                print("Nachricht schon gelöscht oder nicht gefunden.")
+            except Exception as error:
+                print(f"Fehler beim Löschen: {error}")    
+
+        await interaction.response.send_message(embed=discord.Embed(title="Start Game", description="Drücke **Ready** um mitzuspielen! Die ersten zwei sind dabei.", color=discord.Color.green()), view=view)
+
+
+    @discord.ui.button(label="Computer", style=discord.ButtonStyle.red, disabled=False)
+    async def computer(self, interaction: discord.Interaction, button: discord.ui.Button):
+        user_id = interaction.user.id
+        board = [i for i in range(1, 10)]
+        count = 0
+        
+        save_tictactoe_board(user_id, board, count, opponent_id=None)
+        view = TicTacToeEnemyComputer(user_id)
+        user_id = interaction.user.id
+        
+        if user_id in bot_msg_db:
+            channel_id, message_id = bot_msg_db[user_id]
+            channel = interaction.client.get_channel(channel_id)
+            try:
+                message = await channel.fetch_message(message_id)
+                await message.delete()
+                del bot_msg_db[user_id]
+            except discord.NotFound:
+                print("Nachricht schon gelöscht oder nicht gefunden.")
+            except Exception as error:
+                print(f"Fehler beim Löschen: {error}") 
+
+        await interaction.response.send_message(embed=discord.Embed(title="Spiel läuft:", color=discord.Color.red()), view=view)
+
+
+
+class TicTacToeReady(discord.ui.View):
+    def __init__(self, *, timeout=None):
+        super().__init__(timeout=timeout)
+        self.players = []
+
+
+    @discord.ui.button(label="Ready", style=discord.ButtonStyle.green, disabled=False)
+    async def ready(self, interaction: discord.Interaction, button: discord.ui.Button):
+        if interaction.user.id in self.players:
+            await interaction.response.send_message("Du bist schon bereit!", ephemeral=True, delete_after=3.0)
+            return
+        
+        self.players.append(interaction.user.id)
+        
+        if len(self.players) == 1:
+            await interaction.response.send_message(f"{interaction.user.mention} ist bereit! Warte auf einen zweiten Spieler...", ephemeral=True, delete_after=3.0)
+        elif len(self.players) == 2:
+            user_id = self.players[0]
+            opponent_id = self.players[1]
+            board = [i for i in range(1, 10)]
+            count = 0
+            save_tictactoe_board(user_id, board, count, opponent_id)
+            view = TicTacToeEnemyPlayer(user_id)
+            for item in self.children:
+                item.disabled = True
+            await interaction.message.edit(embed=discord.Embed(title="Spiel läuft:", color=discord.Color.green()),view=view)
+            await interaction.response.send_message(f"Spiel startet zwischen <@{user_id}> (X) und <@{opponent_id}> (O)!", delete_after=3.0)
+        else:
+            await interaction.response.send_message("Es sind schon zwei Spieler bereit!", ephemeral=True, delete_after=5.0)
+
+
+
+class TicTacToeEnemyPlayer(discord.ui.View):
+    def __init__(self, user_id, *, timeout=None):
+        super().__init__(timeout=timeout)
+        self.user_id = user_id
+        for i in range(9):
+            button = discord.ui.Button(label=str(i+1), style=discord.ButtonStyle.secondary, row=i // 3, disabled=False)
+            button.callback = self.handle_field(i)
+            self.add_item(button)
+
+
+    def handle_field(self, index):
+        async def move(interaction: discord.Interaction):
+            user_id = self.user_id
+            board, count, opponent_id = load_tictactoe_board(user_id)
+            if board is None:
+                await interaction.response.send_message("Das Spiel existiert nicht mehr.", ephemeral=True, delete_after=5.0)
+                return
+
+            if opponent_id is None and interaction.user.id != user_id:
+                opponent_id = interaction.user.id
+                save_tictactoe_board(user_id, board, count, opponent_id)
+
+            if opponent_id is None:
+                await interaction.response.send_message("Warte auf einen zweiten Spieler...", ephemeral=True, delete_after=3.0)
+                return
+
+            if interaction.user.id not in [user_id, opponent_id]:
+                await interaction.response.send_message("Du bist kein Teilnehmer dieses Spiels.", ephemeral=True, delete_after=5.0)
+                return
+
+            if (count % 2 == 0 and interaction.user.id != user_id) or (count % 2 == 1 and interaction.user.id != opponent_id):
+                await interaction.response.send_message("Du bist nicht am Zug.", ephemeral=True, delete_after=3.0)
+                return
+
+            board[index] = "X" if count % 2 == 0 else "O"
+            count += 1
+            save_tictactoe_board(user_id, board, count, opponent_id)
+
+            if is_board_game_over(board):
+                winner = get_winner(board)
+                if winner == "Draw":
+                    msg = f"{get_updated_board(board=board)}\n**Game over!**\nDraw!"
+                else:
+                    msg = f"{get_updated_board(board=board)}\n**Game over!**\nWinner: **{winner}**"
+                await interaction.response.edit_message(embed=discord.Embed(title=msg, color=discord.Color.green()), view=None)
+                delete_tictactoe_board(user_id)
+            else:
+                view = TicTacToeEnemyPlayer(user_id)
+                for i, item in enumerate(view.children):
+                    if isinstance(board[i], str):
+                        item.label = board[i]
+                        item.disabled = True
+                    else:
+                        item.label = str(board[i])
+                        item.disabled = False
+                await interaction.response.edit_message(embed=discord.Embed(title="Spiel läuft:", color=discord.Color.green()), view=view)
+        
+        return move   
+
+
+
+class TicTacToeEnemyComputer(discord.ui.View):
+    def __init__(self, user_id, *, timeout=None):
+        super().__init__(timeout=timeout)
+        self.user_id = user_id
+        for i in range(9):
+            button = discord.ui.Button(label=str(i+1), style=discord.ButtonStyle.secondary, row=i // 3, disabled=False)
+            button.callback = self.handle_field(i)
+            self.add_item(button)
+
+
+    def handle_field(self, index):
+        async def move(interaction: discord.Interaction):
+            user_id = self.user_id  
+            board, count, _ = load_tictactoe_board(user_id)  # Fix: unpack only needed values
+            board[index] = "X"
+            count += 1
+            save_tictactoe_board(user_id, board, count)
+
+            if is_board_game_over(board):
+                winner = get_winner(board)
+                if winner == "Draw":
+                    msg = f"{get_updated_board(board=board)}\n**Game over!**\nDraw!"
+                else:
+                    msg = f"{get_updated_board(board=board)}\n**Game over!**\nWinner: **{winner}**"
+                await interaction.response.edit_message(embed=discord.Embed(title=msg), view=None)
+                delete_tictactoe_board(user_id)
+                return
+
+            free_field = [i for i, j in enumerate(board) if not isinstance(j, str)]
+            
+            if free_field:
+                bot_index = bot_num()
+                while bot_index not in free_field:
+                    bot_index = bot_num()
+                board[bot_index] = "O"
+                count += 1
+                save_tictactoe_board(user_id, board, count)
+
+            if is_board_game_over(board):
+                winner = get_winner(board)
+                if winner == "Draw":
+                    msg = f"{get_updated_board(board=board)}\n**Game over!**\nDraw!"
+                else:
+                    msg = f"{get_updated_board(board=board)}\n**Game over!**\nWinner: **{winner}**"
+                await interaction.response.edit_message(embed=discord.Embed(title=msg, color=discord.Color.red()), view=None)
+                delete_tictactoe_board(user_id)
+            else:
+                view = TicTacToeEnemyComputer(user_id)
+                for i, item in enumerate(view.children):
+                    if isinstance(board[i], str):
+                        item.label = board[i]
+                        item.disabled = True
+                    else:
+                        item.label = str(board[i])
+                        item.disabled = False
+                await interaction.response.edit_message(embed=discord.Embed(title="Spiel läuft:", color=discord.Color.red()), view=view)
+        
+        return move

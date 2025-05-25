@@ -40,5 +40,14 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS server_kicked(
     )
 """)
 
+cursor.execute("""CREATE TABLE IF NOT EXISTS tictactoe_board(
+    user_id INTEGER NOT NULL,
+    opponent_id INTEGER,
+    board TEXT NOT NULL,
+    count INTEGER NOT NULL,
+    PRIMARY KEY (user_id)
+    )
+""")
+
 conn.commit()
 conn.close()

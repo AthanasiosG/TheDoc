@@ -1,15 +1,16 @@
 import discord, random, sqlite3, asyncio
 from discord import app_commands
 from discord.ext import commands
-from buttons import VerifyButtons, SupportButtons, CloseTicketButtons, ChoseRole
+from buttons import VerifyButtons, SupportButtons, CloseTicketButtons, ChoseRole, ChooseTicTacToeEnemy
 from database import support_db, bot_msg_db
+
 
 
 class BasicCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         
-        
+
     @app_commands.command(name="all_commands", description="Alle verfügbaren Bot-Commands")
     async def all_commands(self, interaction: discord.Interaction):   
         cmd_list = [cmd.name for cmd in self.bot.tree.get_commands()]
@@ -282,3 +283,11 @@ class BasicCommands(commands.Cog):
                     cursor.execute("DELETE FROM blacklist WHERE word=? AND guild_id=?", (word, interaction.guild.id))
                     conn.commit()
             await interaction.followup.send(f"{word} wurde aus der Blacklist entfernt!", ephemeral=True)
+            
+            
+    @app_commands.command(name="tictactoe", description="Das Spiel TicTacToe")
+    async def tictactoe(self, interaction: discord.Interaction):
+        view = ChooseTicTacToeEnemy()
+        await interaction.response.send_message(embed=discord.Embed(title="Gegen Spieler oder gegen Computer?", colour=6702), view=view, delete_after=8.0)
+        sent_msg = await interaction.original_response()
+        bot_msg_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
