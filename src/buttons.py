@@ -19,7 +19,6 @@ class VerifyButtons(discord.ui.View):
             
         await interaction.user.add_roles(verified_role)
         await interaction.response.send_message(embed=discord.Embed(title="Du bist nun verifiziert!", description="Diese Nachricht wird in kürze automatisch gelöscht...", colour=6702), ephemeral=True, delete_after=8.0)
-        
         user_id = interaction.user.id
         
         if user_id in bot_msg_db:
@@ -69,7 +68,6 @@ class SupportButtons(discord.ui.View):
         
         msg = await support_channel.send(embed=discord.Embed(title="Ein Ticket wurde eröffnet", description="Grund: " + self.reason, colour=6702), content=support_role.mention, view=view)
         await interaction.response.send_message(embed=discord.Embed(title="Erfolg!", description="Ein Support-Mitarbeiter wird das Ticket in kürze bearbeiten...", colour=6702), ephemeral=True, delete_after=8.0)
-        
         bot_msg_db[user_id] = (support_channel.id, msg.id)
         
         if user_id in support_db:
@@ -104,7 +102,6 @@ class SupportTeamButtons(discord.ui.View):
     @discord.ui.button(style=discord.ButtonStyle.green, label="Open", disabled=False)
     async def open(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
-
         guild = interaction.guild
         user = guild.get_member(self.user_id)
         sup_channel = await guild.create_text_channel(name=f"support-{user.name}")
@@ -133,6 +130,7 @@ class SupportTeamButtons(discord.ui.View):
     @discord.ui.button(style=discord.ButtonStyle.red, label="Close", disabled=False)
     async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message(embed=discord.Embed(title="Ticket geschlossen", colour=6702), ephemeral=True, delete_after=8.0)
+        
         try:
             ch_id, msg_id = bot_msg_db[self.user_id]
             channel = interaction.client.get_channel(ch_id)
@@ -163,6 +161,7 @@ class CloseTicketButtons(discord.ui.View):
                 await channel.delete()    
             else:
                 await interaction.response.send_message("**Fehler**\nDieser Befehl kann nicht in diesem Channel benutzt werden.", ephemeral=True, delete_after=8.0)
+
 
 
 class ChooseRole(discord.ui.View):
@@ -230,7 +229,6 @@ class ChooseTicTacToeEnemy(discord.ui.View):
         user_id = interaction.user.id
         board = [i for i in range(1, 10)]
         count = 0
-        
         save_ttt_board(user_id, board, count, opponent_id=None)
         view = TicTacToeEnemyComputer(user_id)
         user_id = interaction.user.id
@@ -297,6 +295,7 @@ class TicTacToeEnemyPlayer(discord.ui.View):
         async def move(interaction: discord.Interaction):
             user_id = self.user_id
             board, count, opponent_id = load_ttt_board(user_id)
+            
             if board is None:
                 await interaction.response.send_message("Das Spiel existiert nicht mehr.", ephemeral=True, delete_after=5.0)
                 return
@@ -363,7 +362,6 @@ class TicTacToeEnemyComputer(discord.ui.View):
             board[index] = "X"
             count += 1
             save_ttt_board(user_id, board, count)
-
             free_field = [i for i, j in enumerate(board) if not isinstance(j, str)]
             
             if free_field:
@@ -400,7 +398,7 @@ class TicTacToeEnemyComputer(discord.ui.View):
     
          
        
-class HangmanReady(discord.ui.View):
+class HangmanPlayerReady(discord.ui.View):
     def __init__(self, user_id, word, *, timeout=None):
         super().__init__(timeout=timeout)
         self.user_id = user_id 
@@ -428,12 +426,13 @@ class HangmanReady(discord.ui.View):
         
         self.opponent_id = interaction.user.id
         hg_word = ""
+        
         for char in self.word:
             hg_word += "◻️ " if char != " " else "\n\n"
 
         save_hangman(self.user_id, self.opponent_id, self.word, hg_word, 0, set(), 1)
-
         view = HangmanEnemyPlayerAM(self.user_id)
+        
         for item in self.children:
             item.disabled = True
 
@@ -478,6 +477,8 @@ class HangmanEnemyPlayerAM(discord.ui.View):
 
     def handle_field(self, letter):
         async def move(interaction: discord.Interaction):
+            user_id = self.user_id
+            
             if hg_msg_db.get(self.user_id) != interaction.message.id:
                 await interaction.response.send_message("Dieses Game wurde abgebrochen.", ephemeral=True, delete_after=5.0)
                 return
@@ -486,7 +487,6 @@ class HangmanEnemyPlayerAM(discord.ui.View):
                 await interaction.response.send_message("Dieses Spiel existiert nicht mehr.", ephemeral=True, delete_after=5.0)
                 return
 
-            user_id = self.user_id
             opponent_id, word, hg_word, failed_attempts, disabled, _ = load_hangman(user_id)
 
             if interaction.user.id != opponent_id:
@@ -496,9 +496,9 @@ class HangmanEnemyPlayerAM(discord.ui.View):
             if is_hg_game_over(word, hg_word, failed_attempts):
                 opponent = await interaction.guild.fetch_member(opponent_id)
                 user = await interaction.guild.fetch_member(user_id)
-                title = f"{opponent} hast gewonnen!" if "◻️" not in hg_word else f"{user}  hat gewonnen!"
+                title = f"{opponent} hat gewonnen!" if "◻️" not in hg_word else f"{user} hat gewonnen!"
                 color = discord.Color.green() if "◻️" not in hg_word else discord.Color.red()
-                await interaction.response.edit_message(embed=discord.Embed(title=title, description=f"Fehlversuche: {failed_attempts}", color=color), view=None)
+                await interaction.response.edit_message(embed=discord.Embed(title=title, description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=color), view=None)
                 if user_id in hg_msg_db:
                     del hg_msg_db[user_id]
                 return
@@ -511,7 +511,7 @@ class HangmanEnemyPlayerAM(discord.ui.View):
                 save_hangman(user_id, opponent_id, word, hg_word, failed_attempts, disabled, 1)
                 if failed_attempts >= 6:
                     user = await interaction.guild.fetch_member(user_id)
-                    await interaction.response.edit_message(embed=discord.Embed(title=f"{user} hat gewonnen!", description=f"Fehlversuche: {failed_attempts}", color=discord.Color.red()), view=None)
+                    await interaction.response.edit_message(embed=discord.Embed(title=f"{user} hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.red()), view=None)
                     delete_hangman(user_id)
                     if user_id in hg_msg_db:
                         del hg_msg_db[user_id]
@@ -532,7 +532,7 @@ class HangmanEnemyPlayerAM(discord.ui.View):
 
             if "◻️" not in hg_word:
                 opponent = await interaction.guild.fetch_member(opponent_id)
-                await interaction.response.edit_message(embed=discord.Embed(title=f"{opponent} hast gewonnen!", description=f"Fehlversuche: {failed_attempts}", color=discord.Color.green()), view=None)
+                await interaction.response.edit_message(embed=discord.Embed(title=f"{opponent} hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.green()), view=None)
                 delete_hangman(user_id)
                 if user_id in hg_msg_db:
                     del hg_msg_db[user_id]
@@ -561,15 +561,16 @@ class HangmanEnemyPlayerNZ(discord.ui.View):
 
     def handle_field(self, letter):
         async def move(interaction: discord.Interaction):
-            if hg_msg_db.get(self.user_id) != interaction.message.id:
+            user_id = self.user_id
+            
+            if hg_msg_db.get(user_id) != interaction.message.id:
                 await interaction.response.send_message("Dieses Game wurde abgebrochen.", ephemeral=True, delete_after=5.0)
                 return
             
-            if not is_hangman_active(self.user_id):
+            if not is_hangman_active(user_id):
                 await interaction.response.send_message("Dieses Spiel existiert nicht mehr.", ephemeral=True, delete_after=5.0)
                 return
 
-            user_id = self.user_id
             opponent_id, word, hg_word, failed_attempts, disabled, _ = load_hangman(user_id)
 
             if interaction.user.id != opponent_id:
@@ -579,9 +580,9 @@ class HangmanEnemyPlayerNZ(discord.ui.View):
             if is_hg_game_over(word, hg_word, failed_attempts):
                 opponent = await interaction.guild.fetch_member(opponent_id)
                 user = await interaction.guild.fetch_member(user_id)
-                title = f"{opponent} hast gewonnen!" if "◻️" not in hg_word else f"{user}  hat gewonnen!"
+                title = f"{opponent} hat gewonnen!" if "◻️" not in hg_word else f"{user} hat gewonnen!"
                 color = discord.Color.green() if "◻️" not in hg_word else discord.Color.red()
-                await interaction.response.edit_message(embed=discord.Embed(title=title, description=f"Fehlversuche: {failed_attempts}", color=color), view=None)
+                await interaction.response.edit_message(embed=discord.Embed(title=title, description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=color), view=None)
                 if user_id in hg_msg_db:
                     del hg_msg_db[user_id]
                 return
@@ -594,7 +595,7 @@ class HangmanEnemyPlayerNZ(discord.ui.View):
                 save_hangman(user_id, opponent_id, word, hg_word, failed_attempts, disabled, 1)
                 if failed_attempts >= 6:
                     user = await interaction.guild.fetch_member(user_id)
-                    await interaction.response.edit_message(embed=discord.Embed(title=f"{user} hat gewonnen!", description=f"Fehlversuche: {failed_attempts}", color=discord.Color.red()), view=None)
+                    await interaction.response.edit_message(embed=discord.Embed(title=f"{user} hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.red()), view=None)
                     delete_hangman(user_id)
                     if user_id in hg_msg_db:
                         del hg_msg_db[user_id]
@@ -614,12 +615,12 @@ class HangmanEnemyPlayerNZ(discord.ui.View):
 
             if "◻️" not in hg_word:
                 opponent = await interaction.guild.fetch_member(opponent_id)
-                await interaction.response.edit_message(embed=discord.Embed(title=f"{opponent} hast gewonnen!", description=f"Fehlversuche: {failed_attempts}", color=discord.Color.green()), view=None)
+                await interaction.response.edit_message(embed=discord.Embed(title=f"{opponent} hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.green()), view=None)
                 delete_hangman(user_id)
                 if user_id in hg_msg_db:
                     del hg_msg_db[user_id]
             else:
-                await interaction.response.edit_message(embed=discord.Embed(title=f"Spiel läuft: ({failed_attempts}/6 Fehlversuche)", description=hg_word, color=discord.Color.green()), view=HangmanEnemyPlayerAM(user_id))
+                await interaction.response.edit_message(embed=discord.Embed(title=f"Spiel läuft: ({failed_attempts}/6 Fehlversuche)", description=hg_word, color=discord.Color.green()), view=HangmanEnemyPlayerNZ(user_id))
                 
         return move
 
@@ -627,3 +628,196 @@ class HangmanEnemyPlayerNZ(discord.ui.View):
     @discord.ui.button(label="← A-M", style=discord.ButtonStyle.primary, row=4)
     async def to_am(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.edit_message(view=HangmanEnemyPlayerAM(self.user_id))
+        
+        
+
+class HangmanComputerReady(discord.ui.View):
+    def __init__(self, user_id, word, *, timeout=None):
+        super().__init__(timeout=timeout)
+        self.user_id = user_id
+        self.word = word
+        
+    @discord.ui.button(label="Ready", style=discord.ButtonStyle.green, disabled=False)
+    async def start(self, interaction: discord.Interaction, button: discord.ui.Button):
+        user_id = self.user_id
+        view = HangmanEnemyComputerAM(self.user_id)
+        
+        if interaction.user.id != user_id:
+            await interaction.response.send_message("Du bist nicht der Spielleiter", ephemeral=True, delete_after=5.0)
+            return    
+            
+        hg_word = ""
+        
+        for char in self.word:
+            hg_word += "◻️ " if char != " " else "\n\n"
+
+        save_hangman(self.user_id, None, self.word, hg_word, 0, set(), 1)
+        
+        for item in self.children:
+            item.disabled = True
+
+        await interaction.response.edit_message(embed=discord.Embed(title="Spiel läuft:", description=hg_word, color=discord.Color.green()), view=view)
+
+
+
+class HangmanEnemyComputerAM(discord.ui.View):
+    def __init__(self, user_id, *, timeout=None):
+        super().__init__(timeout=timeout)
+        self.user_id = user_id
+        disabled = get_disabled_buttons(user_id)
+        for char in "abcdefghijklm":
+            button = discord.ui.Button(label=char.upper(), style=discord.ButtonStyle.secondary, disabled=char.upper() in disabled)
+            button.callback = self.handle_field(char)
+            self.add_item(button)
+
+
+    def handle_field(self, letter):
+        async def move(interaction: discord.Interaction):
+            user_id = self.user_id
+            
+            if hg_msg_db.get(user_id) != interaction.message.id:
+                await interaction.response.send_message("Dieses Game wurde abgebrochen.", ephemeral=True, delete_after=5.0)
+                return
+            
+            if not is_hangman_active(user_id):
+                await interaction.response.send_message("Dieses Spiel existiert nicht mehr.", ephemeral=True, delete_after=5.0)
+                return
+
+            if interaction.user.id != user_id:
+                await interaction.response.send_message("Du bist nicht der Spielleiter", ephemeral=True, delete_after=5.0)
+
+            opponent_id, word, hg_word, failed_attempts, disabled, _ = load_hangman(user_id)
+
+            if is_hg_game_over(word, hg_word, failed_attempts):
+                user = await interaction.guild.fetch_member(user_id)
+                title = f"{user} hat gewonnen!" if "◻️" not in hg_word else "TheDoc hat gewonnen!"
+                color = discord.Color.green() if "◻️" not in hg_word else discord.Color.red()
+                await interaction.response.edit_message(embed=discord.Embed(title=title, description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=color), view=None)
+                if user_id in hg_msg_db:
+                    del hg_msg_db[user_id]
+                return
+
+            disabled.add(letter.upper())
+            set_disabled_buttons(user_id, disabled)
+
+            if letter.upper() not in word.upper():
+                failed_attempts += 1
+                save_hangman(user_id, opponent_id, word, hg_word, failed_attempts, disabled, 1)
+                if failed_attempts >= 6:
+                    user = await interaction.guild.fetch_member(user_id)
+                    await interaction.response.edit_message(embed=discord.Embed(title="TheDoc hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.red()), view=None)
+                    delete_hangman(user_id)
+                    if user_id in hg_msg_db:
+                        del hg_msg_db[user_id]
+                    return
+
+            new_hg_word = ""
+            
+            for char in word:
+                if char == " ":
+                    new_hg_word += "\n\n"
+                elif char.upper() in disabled:
+                    new_hg_word += char.upper() + " "
+                else:
+                    new_hg_word += "◻️ "
+
+            hg_word = new_hg_word
+            save_hangman(user_id, opponent_id, word, hg_word, failed_attempts, disabled, 1)
+
+            if "◻️" not in hg_word:
+                user = await interaction.guild.fetch_member(user_id)
+                await interaction.response.edit_message(embed=discord.Embed(title=f"{user} hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.green()), view=None)
+                delete_hangman(user_id)
+                if user_id in hg_msg_db:
+                    del hg_msg_db[user_id]
+            else:
+                await interaction.response.edit_message(embed=discord.Embed(title=f"Spiel läuft: ({failed_attempts}/6 Fehlversuche)", description=hg_word, color=discord.Color.green()), view=HangmanEnemyComputerAM(user_id))
+        
+        return move
+    
+    
+    @discord.ui.button(label="→ N-Z", style=discord.ButtonStyle.primary, row=4)
+    async def to_nz(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(view=HangmanEnemyComputerNZ(self.user_id))
+    
+    
+
+class HangmanEnemyComputerNZ(discord.ui.View):
+    def __init__(self, user_id, *, timeout=None):
+        super().__init__(timeout=timeout)
+        self.user_id = user_id
+        disabled = get_disabled_buttons(user_id)
+        for c in "nopqrstuvwxyz":
+            button = discord.ui.Button(label=c.upper(), style=discord.ButtonStyle.secondary, disabled=c.upper() in disabled)
+            button.callback = self.handle_field(c)
+            self.add_item(button)
+
+
+    def handle_field(self, letter):
+        async def move(interaction: discord.Interaction):
+            user_id = self.user_id
+            
+            if hg_msg_db.get(user_id) != interaction.message.id:
+                await interaction.response.send_message("Dieses Game wurde abgebrochen.", ephemeral=True, delete_after=5.0)
+                return
+            
+            if not is_hangman_active(user_id):
+                await interaction.response.send_message("Dieses Spiel existiert nicht mehr.", ephemeral=True, delete_after=5.0)
+                return
+
+            if interaction.user.id != user_id:
+                await interaction.response.send_message("Du bist nicht der Spielleiter", ephemeral=True, delete_after=5.0)
+
+            opponent_id, word, hg_word, failed_attempts, disabled, _ = load_hangman(user_id)
+
+            if is_hg_game_over(word, hg_word, failed_attempts):
+                user = await interaction.guild.fetch_member(user_id)
+                title = f"{user} hat gewonnen!" if "◻️" not in hg_word else "TheDoc hat gewonnen!"
+                color = discord.Color.green() if "◻️" not in hg_word else discord.Color.red()
+                await interaction.response.edit_message(embed=discord.Embed(title=title, description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=color), view=None)
+                if user_id in hg_msg_db:
+                    del hg_msg_db[user_id]
+                return
+
+            disabled.add(letter.upper())
+            set_disabled_buttons(user_id, disabled)
+
+            if letter.upper() not in word.upper():
+                failed_attempts += 1
+                save_hangman(user_id, opponent_id, word, hg_word, failed_attempts, disabled, 1)
+                if failed_attempts >= 6:
+                    user = await interaction.guild.fetch_member(user_id)
+                    await interaction.response.edit_message(embed=discord.Embed(title="TheDoc hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.red()), view=None)
+                    delete_hangman(user_id)
+                    if user_id in hg_msg_db:
+                        del hg_msg_db[user_id]
+                    return
+
+            new_hg_word = ""
+            
+            for char in word:
+                if char == " ":
+                    new_hg_word += "\n\n"
+                elif char.upper() in disabled:
+                    new_hg_word += char.upper() + " "
+                else:
+                    new_hg_word += "◻️ "
+
+            hg_word = new_hg_word
+            save_hangman(user_id, opponent_id, word, hg_word, failed_attempts, disabled, 1)
+
+            if "◻️" not in hg_word:
+                user = await interaction.guild.fetch_member(user_id)
+                await interaction.response.edit_message(embed=discord.Embed(title=f"{user} hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.green()), view=None)
+                delete_hangman(user_id)
+                if user_id in hg_msg_db:
+                    del hg_msg_db[user_id]
+            else:
+                await interaction.response.edit_message(embed=discord.Embed(title=f"Spiel läuft: ({failed_attempts}/6 Fehlversuche)", description=hg_word, color=discord.Color.green()), view=HangmanEnemyComputerNZ(user_id))
+        
+        return move
+    
+
+    @discord.ui.button(label="← A-M", style=discord.ButtonStyle.primary, row=4)
+    async def to_am(self, interaction: discord.Interaction, button: discord.ui.Button):
+        await interaction.response.edit_message(view=HangmanEnemyComputerAM(self.user_id))

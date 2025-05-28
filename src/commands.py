@@ -1,4 +1,4 @@
-import discord, random, sqlite3, asyncio
+import discord, random, sqlite3, asyncio, json, random
 from discord import app_commands
 from discord.ext import commands
 from buttons import *
@@ -295,7 +295,7 @@ class BasicCommands(commands.Cog):
         
         
     @app_commands.command(name="hangman_vs_player", description="Das Spiel Hangman")
-    async def hangman(self, interaction: discord.Interaction, word: str):
+    async def hangman_player(self, interaction: discord.Interaction, word: str):
         with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT active FROM hangman WHERE user_id=?", (interaction.user.id,))
@@ -307,8 +307,34 @@ class BasicCommands(commands.Cog):
             cursor.execute("INSERT INTO hangman (user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons, active) VALUES (?, ?, ?, ?, ?, ?, ?)", (interaction.user.id, None, word, "", 0, "", 1))
             conn.commit()
 
-        view = HangmanReady(interaction.user.id, word)
+        view = HangmanPlayerReady(interaction.user.id, word)
         await interaction.response.send_message(embed=discord.Embed(title=f"Warte auf einen Gegner! Der erste, der auf 'Ready' klickt, spielt gegen {interaction.user}.", colour=6702), view=view)
+        sent_msg = await interaction.original_response()
+        bot_msg_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
+        hg_msg_db[interaction.user.id] = sent_msg.id
+        
+        
+    @app_commands.command(name="hangman_vs_computer", description="Das Spiel Hangman")
+    async def hangman_computer(self, interaction: discord.Interaction):
+        with open("hg_words.json", "r") as file:
+            data = json.load(file)
+            hg_words = data["words"]
+            num = random.randint(0,100)
+            word = hg_words[num]
+                
+        with sqlite3.connect("database.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT active FROM hangman WHERE user_id=?", (interaction.user.id,))
+            row = cursor.fetchone()
+            if row and row[0] == 1:
+                deactivate_hangman(interaction.user.id)
+            cursor.execute("DELETE FROM hangman WHERE user_id=?", (interaction.user.id,))
+            conn.commit()
+            cursor.execute("INSERT INTO hangman (user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons, active) VALUES (?, ?, ?, ?, ?, ?, ?)", (interaction.user.id, None, word, "", 0, "", 1))
+            conn.commit()
+
+        view = HangmanComputerReady(interaction.user.id, word)
+        await interaction.response.send_message(embed=discord.Embed(title="Spiel starten?", description="Drücke **Ready** um loszulegen!", colour=6702), view=view)
         sent_msg = await interaction.original_response()
         bot_msg_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
         hg_msg_db[interaction.user.id] = sent_msg.id
