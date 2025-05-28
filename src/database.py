@@ -2,7 +2,7 @@ import sqlite3
 
 support_db = {}
 bot_msg_db = {}
-
+hg_msg_db = {}
 
 conn = sqlite3.connect("database.db")
 cursor = conn.cursor()
@@ -45,6 +45,18 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS tictactoe_board(
     opponent_id INTEGER,
     board TEXT NOT NULL,
     count INTEGER NOT NULL,
+    PRIMARY KEY (user_id)
+    )
+""")
+
+cursor.execute("""CREATE TABLE IF NOT EXISTS hangman(
+    user_id INTEGER NOT NULL,
+    opponent_id INTEGER,
+    word TEXT NOT NULL,
+    hg_word TEXT,
+    failed_attempts INTEGER NOT NULL,
+    disabled_buttons TEXT,
+    active INTEGER NOT NULL DEFAULT 1,
     PRIMARY KEY (user_id)
     )
 """)
