@@ -316,7 +316,7 @@ class BasicCommands(commands.Cog):
         
     @app_commands.command(name="hangman_vs_computer", description="Das Spiel Hangman")
     async def hangman_computer(self, interaction: discord.Interaction):
-        with open("hg_words.json", "r") as file:
+        with open("json/hg_words.json", "r") as file:
             data = json.load(file)
             hg_words = data["words"]
             num = random.randint(0,100)
