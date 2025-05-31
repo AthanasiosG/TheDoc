@@ -845,3 +845,30 @@ class HangmanEnemyComputerNZ(discord.ui.View):
             await interaction.response.edit_message(view=HangmanEnemyComputerAM(self.user_id))
         else:
             await interaction.response.send_message("Du bist nicht der Spieler.", ephemeral=True, delete_after=5.0)
+            
+            
+            
+class Quiz(discord.ui.View):
+    def __init__(self, user_id, question, answer_choices, answer, *, timeout=None):
+        super().__init__(timeout=timeout)
+        self.user_id = user_id
+        self.question = question
+        self.answer_choices = answer_choices
+        self.answer = answer
+        for choice in answer_choices:
+            button = discord.ui.Button(label=choice, style=discord.ButtonStyle.primary, disabled=False)
+            button.callback = self.handle_field(choice)
+            self.add_item(button)
+            
+    def handle_field(self, choice):
+        async def move(interaction: discord.Interaction):
+            if interaction.user.id != self.user_id:
+                await interaction.response.send_message("Du bist nicht der Spieler.",ephemeral=True, delete_after=5.0)
+                return
+            
+            if choice == self.answer:
+                await interaction.response.edit_message(embed=discord.Embed(title="Richtig!", description=f"Frage: {self.question}\nDie Antwort **{self.answer}** ist richtig!", color=discord.Color.green()), view=None)
+            else:
+                await interaction.response.edit_message(embed=discord.Embed(title="Falsch!", description=f"Frage: {self.question}\nDie richtige Antwort lautet: **{self.answer}**", color=discord.Color.red()), view=None)
+                
+        return move
