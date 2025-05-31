@@ -490,7 +490,7 @@ class HangmanEnemyPlayerAM(discord.ui.View):
             opponent_id, word, hg_word, failed_attempts, disabled, _ = load_hangman(user_id)
 
             if interaction.user.id != opponent_id:
-                await interaction.response.send_message("Nur der Gegner darf Buchstaben auswählen.", ephemeral=True, delete_after=5.0)
+                await interaction.response.send_message("Du bist nicht der Spieler.", ephemeral=True, delete_after=5.0)
                 return
 
             if is_hg_game_over(word, hg_word, failed_attempts):
@@ -544,7 +544,15 @@ class HangmanEnemyPlayerAM(discord.ui.View):
 
     @discord.ui.button(label="→ N-Z", style=discord.ButtonStyle.primary, row=4)
     async def to_nz(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.edit_message(view=HangmanEnemyPlayerNZ(self.user_id))
+        with sqlite3.connect("database.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT opponent_id FROM hangman WHERE user_id=?", (self.user_id,))
+            opponent_id = cursor.fetchone()[0]
+            
+        if opponent_id == interaction.user.id:
+            await interaction.response.edit_message(view=HangmanEnemyPlayerNZ(self.user_id))
+        else:
+            await interaction.response.send_message("Du bist nicht der Spieler.", ephemeral=True, delete_after=5.0)
 
 
 
@@ -574,7 +582,7 @@ class HangmanEnemyPlayerNZ(discord.ui.View):
             opponent_id, word, hg_word, failed_attempts, disabled, _ = load_hangman(user_id)
 
             if interaction.user.id != opponent_id:
-                await interaction.response.send_message("Nur der Gegner darf Buchstaben auswählen.", ephemeral=True, delete_after=5.0)
+                await interaction.response.send_message("Du bist nicht der Spieler.", ephemeral=True, delete_after=5.0)
                 return
 
             if is_hg_game_over(word, hg_word, failed_attempts):
@@ -627,9 +635,17 @@ class HangmanEnemyPlayerNZ(discord.ui.View):
 
     @discord.ui.button(label="← A-M", style=discord.ButtonStyle.primary, row=4)
     async def to_am(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.edit_message(view=HangmanEnemyPlayerAM(self.user_id))
-        
-        
+        with sqlite3.connect("database.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT opponent_id FROM hangman WHERE user_id=?", (self.user_id,))
+            opponent_id = cursor.fetchone()[0]
+            
+        if opponent_id == interaction.user.id:
+            await interaction.response.edit_message(view=HangmanEnemyPlayerAM(self.user_id))
+        else:
+            await interaction.response.send_message("Du bist nicht der Spieler.", ephemeral=True, delete_after=5.0)
+
+
 
 class HangmanComputerReady(discord.ui.View):
     def __init__(self, user_id, word, *, timeout=None):
@@ -684,8 +700,9 @@ class HangmanEnemyComputerAM(discord.ui.View):
                 return
 
             if interaction.user.id != user_id:
-                await interaction.response.send_message("Du bist nicht der Spielleiter", ephemeral=True, delete_after=5.0)
-
+                await interaction.response.send_message("Du bist nicht der Spieler.", ephemeral=True, delete_after=5.0)
+                return
+            
             opponent_id, word, hg_word, failed_attempts, disabled, _ = load_hangman(user_id)
 
             if is_hg_game_over(word, hg_word, failed_attempts):
@@ -738,7 +755,10 @@ class HangmanEnemyComputerAM(discord.ui.View):
     
     @discord.ui.button(label="→ N-Z", style=discord.ButtonStyle.primary, row=4)
     async def to_nz(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.edit_message(view=HangmanEnemyComputerNZ(self.user_id))
+        if self.user_id == interaction.user.id:
+            await interaction.response.edit_message(view=HangmanEnemyComputerNZ(self.user_id))
+        else:
+            await interaction.response.send_message("Du bist nicht der Spieler.", ephemeral=True, delete_after=5.0)
     
     
 
@@ -767,7 +787,8 @@ class HangmanEnemyComputerNZ(discord.ui.View):
 
             if interaction.user.id != user_id:
                 await interaction.response.send_message("Du bist nicht der Spielleiter", ephemeral=True, delete_after=5.0)
-
+                return
+            
             opponent_id, word, hg_word, failed_attempts, disabled, _ = load_hangman(user_id)
 
             if is_hg_game_over(word, hg_word, failed_attempts):
@@ -820,4 +841,34 @@ class HangmanEnemyComputerNZ(discord.ui.View):
 
     @discord.ui.button(label="← A-M", style=discord.ButtonStyle.primary, row=4)
     async def to_am(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.edit_message(view=HangmanEnemyComputerAM(self.user_id))
+        if self.user_id == interaction.user.id:
+            await interaction.response.edit_message(view=HangmanEnemyComputerAM(self.user_id))
+        else:
+            await interaction.response.send_message("Du bist nicht der Spieler.", ephemeral=True, delete_after=5.0)
+            
+            
+            
+class Quiz(discord.ui.View):
+    def __init__(self, user_id, question, answer_choices, answer, *, timeout=None):
+        super().__init__(timeout=timeout)
+        self.user_id = user_id
+        self.question = question
+        self.answer_choices = answer_choices
+        self.answer = answer
+        for choice in answer_choices:
+            button = discord.ui.Button(label=choice, style=discord.ButtonStyle.primary, disabled=False)
+            button.callback = self.handle_field(choice)
+            self.add_item(button)
+            
+    def handle_field(self, choice):
+        async def move(interaction: discord.Interaction):
+            if interaction.user.id != self.user_id:
+                await interaction.response.send_message("Du bist nicht der Spieler.",ephemeral=True, delete_after=5.0)
+                return
+            
+            if choice == self.answer:
+                await interaction.response.edit_message(embed=discord.Embed(title="Richtig!", description=f"Frage: {self.question}\nDie Antwort **{self.answer}** ist richtig!", color=discord.Color.green()), view=None)
+            else:
+                await interaction.response.edit_message(embed=discord.Embed(title="Falsch!", description=f"Frage: {self.question}\nDie richtige Antwort lautet: **{self.answer}**", color=discord.Color.red()), view=None)
+                
+        return move

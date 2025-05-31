@@ -316,7 +316,7 @@ class BasicCommands(commands.Cog):
         
     @app_commands.command(name="hangman_vs_computer", description="Das Spiel Hangman")
     async def hangman_computer(self, interaction: discord.Interaction):
-        with open("hg_words.json", "r") as file:
+        with open("json/hg_words.json", "r", encoding="UTF-8") as file:
             data = json.load(file)
             hg_words = data["words"]
             num = random.randint(0,100)
@@ -338,3 +338,18 @@ class BasicCommands(commands.Cog):
         sent_msg = await interaction.original_response()
         bot_msg_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
         hg_msg_db[interaction.user.id] = sent_msg.id
+        
+        
+    @app_commands.command(name="quiz", description="Ein Quiz-Spiel")
+    async def quiz(self, interaction: discord.Interaction):
+        user_id = interaction.user.id
+        
+        with open("json/quiz.json", "r", encoding="UTF-8") as file:
+            data = json.load(file)
+            num = random.randint(1,1000)
+            data = data[num]
+            question = data["frage"]
+            answer_choices = data["antwortmöglichkeiten"]
+            answer = data["lösung"]
+            view = Quiz(user_id, question, answer_choices, answer)
+            await interaction.response.send_message(embed=discord.Embed(title="Frage: "+ question, description="Antwortmöglichkeiten:", colour=6702), view=view)
