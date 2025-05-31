@@ -21,13 +21,15 @@ class VerifyButtons(discord.ui.View):
         await interaction.response.send_message(embed=discord.Embed(title="Du bist nun verifiziert!", description="Diese Nachricht wird in kürze automatisch gelöscht...", colour=6702), ephemeral=True, delete_after=8.0)
         user_id = interaction.user.id
         
-        if user_id in bot_msg_db:
-            channel_id, message_id = bot_msg_db[user_id]
+        msg_info = get_bot_message(user_id, "bot")
+        
+        if msg_info:
+            channel_id, message_id = msg_info
             channel = interaction.client.get_channel(channel_id)
             try:
                 message = await channel.fetch_message(message_id)
                 await message.delete()
-                del bot_msg_db[user_id]
+                delete_bot_message(user_id, "bot")
             except discord.NotFound:
                 print("Nachricht schon gelöscht oder nicht gefunden.")
             except Exception as error:
@@ -67,29 +69,13 @@ class SupportButtons(discord.ui.View):
             self.reason = "Keiner angegeben"
         
         msg = await support_channel.send(embed=discord.Embed(title="Ein Ticket wurde eröffnet", description="Grund: " + self.reason, colour=6702), content=support_role.mention, view=view)
-        await interaction.response.send_message(embed=discord.Embed(title="Erfolg!", description="Ein Support-Mitarbeiter wird das Ticket in kürze bearbeiten...", colour=6702), ephemeral=True, delete_after=8.0)
-        bot_msg_db[user_id] = (support_channel.id, msg.id)
+        set_bot_message(interaction.user.id, msg.channel.id, msg.id, "support")
+        await interaction.response.edit_message(embed=discord.Embed(title="Erfolg!", description="Ein Support-Mitarbeiter wird das Ticket in kürze bearbeiten...", colour=6702),view=None, delete_after=8.0)
         
-        if user_id in support_db:
-            try:
-                del support_db[user_id]
-            except discord.NotFound:
-                print("Nachricht schon gelöscht oder nicht gefunden.")
-            except Exception as error:
-                print(f"Fehler beim Löschen: {error}")  
-
-
+        
     @discord.ui.button(style=discord.ButtonStyle.red, label="Cancel", disabled=False)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
-        user_id = interaction.user.id
-        
-        if user_id in support_db:
-            try:
-                del support_db[user_id]
-            except Exception as e:
-                print(f"Fehler beim Löschen: {e}")
-                
-        await interaction.response.send_message("Ticketanfrage abgebrochen.", ephemeral=True, delete_after=8.0)
+        await interaction.response.edit_message(embed=discord.Embed(title="Ticketanfrage abgebrochen.", colour=6702), view=None, delete_after=5.0)
 
 
 
@@ -100,46 +86,64 @@ class SupportTeamButtons(discord.ui.View):
 
 
     @discord.ui.button(style=discord.ButtonStyle.green, label="Open", disabled=False)
-    async def open(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def open(self, interaction: discord.Interaction, _button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
         user = guild.get_member(self.user_id)
         sup_channel = await guild.create_text_channel(name=f"support-{user.name}")
         await sup_channel.set_permissions(user, read_messages=True, send_messages=True)
-
+        msg_info = get_bot_message(interaction.user.id, "support")
+        
+        if msg_info:
+            channel_id, message_id = msg_info
+            channel = interaction.client.get_channel(channel_id)
+            try:
+                message = await channel.fetch_message(message_id)
+                await message.delete()
+                delete_bot_message(interaction.user.id, "support")
+            except discord.NotFound:
+                print("Support-Dialog-Nachricht schon gelöscht oder nicht gefunden.")
+            except Exception as error:
+                print(f"Fehler beim Löschen der Support-Dialog-Nachricht: {error}")
+                
         for role in guild.roles:
             if not role.permissions.administrator:
                 await sup_channel.set_permissions(role, read_messages=False)
 
         msg = await interaction.followup.send(embed=discord.Embed(title=f"Ticket geöffnet: {sup_channel.mention}", colour=6702), ephemeral=True)
-        await sup_channel.send(embed=discord.Embed(title="Ticket wurde geöffnet", description="Sie sind jetzt mit einem Support-Mitarbeiter verbunden.", colour=6702), content=user.mention)
+        support_msg = await sup_channel.send(embed=discord.Embed(title="Ticket wurde geöffnet", description="Sie sind jetzt mit einem Support-Mitarbeiter verbunden.", colour=6702), content=user.mention)
+        set_bot_message(self.user_id, sup_channel.id, support_msg.id, "support_ticket")
 
         try:
-            channel_id, msg_id = bot_msg_db[self.user_id]
-            channel = interaction.client.get_channel(channel_id)
-            message = await channel.fetch_message(msg_id)
-            await message.delete()
-            del bot_msg_db[self.user_id]
+            msg_info = get_bot_message(self.user_id, "support")
+            if msg_info:
+                channel_id, msg_id = msg_info
+                channel = interaction.client.get_channel(channel_id)
+                message = await channel.fetch_message(msg_id)
+                await message.delete()
+                delete_bot_message(self.user_id, "support")
         except Exception as e:
             print(f"Fehler beim Löschen: {e}")
 
         await asyncio.sleep(15)
         await msg.delete()
-
-
+        
+        
     @discord.ui.button(style=discord.ButtonStyle.red, label="Close", disabled=False)
-    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
+    async def close(self, interaction: discord.Interaction, _button: discord.ui.Button):
         await interaction.response.send_message(embed=discord.Embed(title="Ticket geschlossen", colour=6702), ephemeral=True, delete_after=8.0)
         
         try:
-            ch_id, msg_id = bot_msg_db[self.user_id]
-            channel = interaction.client.get_channel(ch_id)
-            msg = await channel.fetch_message(msg_id)
-            await msg.delete()
-            del bot_msg_db[self.user_id]
+            msg_info = get_bot_message(self.user_id, "support")
+            if msg_info:
+                ch_id, msg_id = msg_info
+                channel = interaction.client.get_channel(ch_id)
+                msg = await channel.fetch_message(msg_id)
+                await msg.delete()
+                delete_bot_message(self.user_id, "support")
         except Exception as e:
             print(f"Fehler beim Löschen: {e}")
-            
+          
             
 
 class CloseTicketButtons(discord.ui.View):
@@ -208,14 +212,15 @@ class ChooseTicTacToeEnemy(discord.ui.View):
     async def player(self, interaction: discord.Interaction, button: discord.ui.Button):
         view = TicTacToeReady()
         user_id = interaction.user.id
+        msg_info = get_bot_message(user_id, "bot")
         
-        if user_id in bot_msg_db:
-            channel_id, message_id = bot_msg_db[user_id]
+        if msg_info:
+            channel_id, message_id = msg_info
             channel = interaction.client.get_channel(channel_id)
             try:
                 message = await channel.fetch_message(message_id)
                 await message.delete()
-                del bot_msg_db[user_id]
+                delete_bot_message(user_id, "bot")
             except discord.NotFound:
                 print("Nachricht schon gelöscht oder nicht gefunden.")
             except Exception as error:
@@ -231,15 +236,15 @@ class ChooseTicTacToeEnemy(discord.ui.View):
         count = 0
         save_ttt_board(user_id, board, count, opponent_id=None)
         view = TicTacToeEnemyComputer(user_id)
-        user_id = interaction.user.id
+        msg_info = get_bot_message(user_id, "bot")
         
-        if user_id in bot_msg_db:
-            channel_id, message_id = bot_msg_db[user_id]
+        if msg_info:
+            channel_id, message_id = msg_info
             channel = interaction.client.get_channel(channel_id)
             try:
                 message = await channel.fetch_message(message_id)
                 await message.delete()
-                del bot_msg_db[user_id]
+                delete_bot_message(user_id, "bot")
             except discord.NotFound:
                 print("Nachricht schon gelöscht oder nicht gefunden.")
             except Exception as error:
@@ -408,7 +413,8 @@ class HangmanPlayerReady(discord.ui.View):
 
     @discord.ui.button(label="Ready", style=discord.ButtonStyle.green, disabled=False)
     async def ready_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
-        if hg_msg_db.get(self.user_id) != interaction.message.id:
+        msg_info = get_bot_message(self.user_id, "hangman")
+        if msg_info and msg_info[1] != interaction.message.id:
             await interaction.response.send_message("Dieses Game wurde abgebrochen.", ephemeral=True, delete_after=5.0)
             return
         
@@ -447,14 +453,15 @@ class HangmanPlayerReady(discord.ui.View):
             return
 
         delete_hangman(self.user_id)
+        msg_info = get_bot_message(self.user_id, "hangman")
         
-        if self.user_id in bot_msg_db:
-            channel_id, message_id = bot_msg_db[self.user_id]
+        if msg_info:
+            channel_id, message_id = msg_info
             channel = interaction.client.get_channel(channel_id)
             try:
                 message = await channel.fetch_message(message_id)
                 await message.delete()
-                del bot_msg_db[self.user_id]
+                delete_bot_message(self.user_id, "hangman")
             except discord.NotFound:
                 print("Nachricht schon gelöscht oder nicht gefunden.")
             except Exception as error:
@@ -478,8 +485,9 @@ class HangmanEnemyPlayerAM(discord.ui.View):
     def handle_field(self, letter):
         async def move(interaction: discord.Interaction):
             user_id = self.user_id
+            msg_info = get_bot_message(user_id, "hangman")
             
-            if hg_msg_db.get(self.user_id) != interaction.message.id:
+            if msg_info and msg_info[1] != interaction.message.id:
                 await interaction.response.send_message("Dieses Game wurde abgebrochen.", ephemeral=True, delete_after=5.0)
                 return
             
@@ -499,8 +507,7 @@ class HangmanEnemyPlayerAM(discord.ui.View):
                 title = f"{opponent} hat gewonnen!" if "◻️" not in hg_word else f"{user} hat gewonnen!"
                 color = discord.Color.green() if "◻️" not in hg_word else discord.Color.red()
                 await interaction.response.edit_message(embed=discord.Embed(title=title, description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=color), view=None)
-                if user_id in hg_msg_db:
-                    del hg_msg_db[user_id]
+                delete_bot_message(user_id, "hangman")
                 return
 
             disabled.add(letter.upper())
@@ -513,8 +520,6 @@ class HangmanEnemyPlayerAM(discord.ui.View):
                     user = await interaction.guild.fetch_member(user_id)
                     await interaction.response.edit_message(embed=discord.Embed(title=f"{user} hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.red()), view=None)
                     delete_hangman(user_id)
-                    if user_id in hg_msg_db:
-                        del hg_msg_db[user_id]
                     return
 
             new_hg_word = ""
@@ -534,8 +539,6 @@ class HangmanEnemyPlayerAM(discord.ui.View):
                 opponent = await interaction.guild.fetch_member(opponent_id)
                 await interaction.response.edit_message(embed=discord.Embed(title=f"{opponent} hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.green()), view=None)
                 delete_hangman(user_id)
-                if user_id in hg_msg_db:
-                    del hg_msg_db[user_id]
             else:
                 await interaction.response.edit_message(embed=discord.Embed(title=f"Spiel läuft: ({failed_attempts}/6 Fehlversuche)", description=hg_word, color=discord.Color.green()), view=HangmanEnemyPlayerAM(user_id))
         
@@ -570,8 +573,9 @@ class HangmanEnemyPlayerNZ(discord.ui.View):
     def handle_field(self, letter):
         async def move(interaction: discord.Interaction):
             user_id = self.user_id
+            msg_info = get_bot_message(user_id, "hangman")
             
-            if hg_msg_db.get(user_id) != interaction.message.id:
+            if msg_info and msg_info[1] != interaction.message.id:
                 await interaction.response.send_message("Dieses Game wurde abgebrochen.", ephemeral=True, delete_after=5.0)
                 return
             
@@ -591,8 +595,7 @@ class HangmanEnemyPlayerNZ(discord.ui.View):
                 title = f"{opponent} hat gewonnen!" if "◻️" not in hg_word else f"{user} hat gewonnen!"
                 color = discord.Color.green() if "◻️" not in hg_word else discord.Color.red()
                 await interaction.response.edit_message(embed=discord.Embed(title=title, description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=color), view=None)
-                if user_id in hg_msg_db:
-                    del hg_msg_db[user_id]
+                delete_bot_message(user_id, "hangman")
                 return
             
             disabled.add(letter.upper())
@@ -605,11 +608,10 @@ class HangmanEnemyPlayerNZ(discord.ui.View):
                     user = await interaction.guild.fetch_member(user_id)
                     await interaction.response.edit_message(embed=discord.Embed(title=f"{user} hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.red()), view=None)
                     delete_hangman(user_id)
-                    if user_id in hg_msg_db:
-                        del hg_msg_db[user_id]
                     return
 
             new_hg_word = ""
+            
             for char in word:
                 if char == " ":
                     new_hg_word += "\n\n"
@@ -624,9 +626,7 @@ class HangmanEnemyPlayerNZ(discord.ui.View):
             if "◻️" not in hg_word:
                 opponent = await interaction.guild.fetch_member(opponent_id)
                 await interaction.response.edit_message(embed=discord.Embed(title=f"{opponent} hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.green()), view=None)
-                delete_hangman(user_id)
-                if user_id in hg_msg_db:
-                    del hg_msg_db[user_id]
+                delete_bot_message(user_id, "hangman")
             else:
                 await interaction.response.edit_message(embed=discord.Embed(title=f"Spiel läuft: ({failed_attempts}/6 Fehlversuche)", description=hg_word, color=discord.Color.green()), view=HangmanEnemyPlayerNZ(user_id))
                 
@@ -690,8 +690,9 @@ class HangmanEnemyComputerAM(discord.ui.View):
     def handle_field(self, letter):
         async def move(interaction: discord.Interaction):
             user_id = self.user_id
+            msg_info = get_bot_message(user_id, "hangman")
             
-            if hg_msg_db.get(user_id) != interaction.message.id:
+            if msg_info and msg_info[1] != interaction.message.id:
                 await interaction.response.send_message("Dieses Game wurde abgebrochen.", ephemeral=True, delete_after=5.0)
                 return
             
@@ -710,8 +711,7 @@ class HangmanEnemyComputerAM(discord.ui.View):
                 title = f"{user} hat gewonnen!" if "◻️" not in hg_word else "TheDoc hat gewonnen!"
                 color = discord.Color.green() if "◻️" not in hg_word else discord.Color.red()
                 await interaction.response.edit_message(embed=discord.Embed(title=title, description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=color), view=None)
-                if user_id in hg_msg_db:
-                    del hg_msg_db[user_id]
+                delete_bot_message(user_id, "hangman")
                 return
 
             disabled.add(letter.upper())
@@ -724,8 +724,6 @@ class HangmanEnemyComputerAM(discord.ui.View):
                     user = await interaction.guild.fetch_member(user_id)
                     await interaction.response.edit_message(embed=discord.Embed(title="TheDoc hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.red()), view=None)
                     delete_hangman(user_id)
-                    if user_id in hg_msg_db:
-                        del hg_msg_db[user_id]
                     return
 
             new_hg_word = ""
@@ -744,15 +742,13 @@ class HangmanEnemyComputerAM(discord.ui.View):
             if "◻️" not in hg_word:
                 user = await interaction.guild.fetch_member(user_id)
                 await interaction.response.edit_message(embed=discord.Embed(title=f"{user} hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.green()), view=None)
-                delete_hangman(user_id)
-                if user_id in hg_msg_db:
-                    del hg_msg_db[user_id]
+                delete_bot_message(user_id, "hangman")
             else:
                 await interaction.response.edit_message(embed=discord.Embed(title=f"Spiel läuft: ({failed_attempts}/6 Fehlversuche)", description=hg_word, color=discord.Color.green()), view=HangmanEnemyComputerAM(user_id))
         
         return move
-    
-    
+
+
     @discord.ui.button(label="→ N-Z", style=discord.ButtonStyle.primary, row=4)
     async def to_nz(self, interaction: discord.Interaction, button: discord.ui.Button):
         if self.user_id == interaction.user.id:
@@ -776,8 +772,9 @@ class HangmanEnemyComputerNZ(discord.ui.View):
     def handle_field(self, letter):
         async def move(interaction: discord.Interaction):
             user_id = self.user_id
+            msg_info = get_bot_message(user_id, "hangman")
             
-            if hg_msg_db.get(user_id) != interaction.message.id:
+            if msg_info and msg_info[1] != interaction.message.id:
                 await interaction.response.send_message("Dieses Game wurde abgebrochen.", ephemeral=True, delete_after=5.0)
                 return
             
@@ -786,7 +783,7 @@ class HangmanEnemyComputerNZ(discord.ui.View):
                 return
 
             if interaction.user.id != user_id:
-                await interaction.response.send_message("Du bist nicht der Spielleiter", ephemeral=True, delete_after=5.0)
+                await interaction.response.send_message("Du bist nicht der Spieler.", ephemeral=True, delete_after=5.0)
                 return
             
             opponent_id, word, hg_word, failed_attempts, disabled, _ = load_hangman(user_id)
@@ -796,8 +793,7 @@ class HangmanEnemyComputerNZ(discord.ui.View):
                 title = f"{user} hat gewonnen!" if "◻️" not in hg_word else "TheDoc hat gewonnen!"
                 color = discord.Color.green() if "◻️" not in hg_word else discord.Color.red()
                 await interaction.response.edit_message(embed=discord.Embed(title=title, description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=color), view=None)
-                if user_id in hg_msg_db:
-                    del hg_msg_db[user_id]
+                delete_bot_message(user_id, "hangman")
                 return
 
             disabled.add(letter.upper())
@@ -810,8 +806,6 @@ class HangmanEnemyComputerNZ(discord.ui.View):
                     user = await interaction.guild.fetch_member(user_id)
                     await interaction.response.edit_message(embed=discord.Embed(title="TheDoc hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.red()), view=None)
                     delete_hangman(user_id)
-                    if user_id in hg_msg_db:
-                        del hg_msg_db[user_id]
                     return
 
             new_hg_word = ""
@@ -830,14 +824,12 @@ class HangmanEnemyComputerNZ(discord.ui.View):
             if "◻️" not in hg_word:
                 user = await interaction.guild.fetch_member(user_id)
                 await interaction.response.edit_message(embed=discord.Embed(title=f"{user} hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.green()), view=None)
-                delete_hangman(user_id)
-                if user_id in hg_msg_db:
-                    del hg_msg_db[user_id]
+                delete_bot_message(user_id, "hangman")
             else:
                 await interaction.response.edit_message(embed=discord.Embed(title=f"Spiel läuft: ({failed_attempts}/6 Fehlversuche)", description=hg_word, color=discord.Color.green()), view=HangmanEnemyComputerNZ(user_id))
         
         return move
-    
+
 
     @discord.ui.button(label="← A-M", style=discord.ButtonStyle.primary, row=4)
     async def to_am(self, interaction: discord.Interaction, button: discord.ui.Button):

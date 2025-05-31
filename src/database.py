@@ -1,8 +1,5 @@
 import sqlite3 
 
-support_db = {}
-bot_msg_db = {}
-hg_msg_db = {}
 
 conn = sqlite3.connect("database.db")
 cursor = conn.cursor()
@@ -61,5 +58,32 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS hangman(
     )
 """)
 
+cursor.execute("""CREATE TABLE IF NOT EXISTS bot_messages(
+    user_id INTEGER NOT NULL,
+    channel_id INTEGER,
+    message_id INTEGER,
+    type TEXT,
+    PRIMARY KEY (user_id, type)
+    )
+""")
+
 conn.commit()
 conn.close()
+
+def set_bot_message(user_id, channel_id, message_id, msg_type="bot"):
+    with sqlite3.connect("database.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("INSERT OR REPLACE INTO bot_messages (user_id, channel_id, message_id, type) VALUES (?, ?, ?, ?)", (user_id, channel_id, message_id, msg_type))
+        conn.commit()
+
+def get_bot_message(user_id, msg_type="bot"):
+    with sqlite3.connect("database.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT channel_id, message_id FROM bot_messages WHERE user_id=? AND type=?", (user_id, msg_type))
+        return cursor.fetchone()
+
+def delete_bot_message(user_id, msg_type="bot"):
+    with sqlite3.connect("database.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM bot_messages WHERE user_id=? AND type=?", (user_id, msg_type))
+        conn.commit()
