@@ -6,7 +6,6 @@ from database import *
 from mini_games import *
 
 
-
 class BasicCommands(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -42,7 +41,7 @@ class BasicCommands(commands.Cog):
             view = VerifyButtons()
             await interaction.response.send_message(embed=embed, view=view)
             sent_msg = await interaction.original_response()
-            bot_msg_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
+            set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "bot")
 
 
     @app_commands.command(name="bot_info", description="Info zum Bot")
@@ -171,8 +170,7 @@ class BasicCommands(commands.Cog):
                     await interaction.response.send_message(embed=discord.Embed(title="Support", description="Willst du sicher ein Ticket eröffnen?", colour=6702), view=view, ephemeral=True, delete_after=15.0)
                 else:
                     await interaction.response.send_message(embed=discord.Embed(title=f"Geh in den {sup_channel.mention} channel um Hilfe zu bekommen.", description="Diese Nachricht wird in kürze automatisch gelöscht...", colour=6702), ephemeral=True, delete_after=8.0)
-                sent_msg = await interaction.original_response()
-                support_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
+                    await interaction.original_response()
         
         
     @app_commands.command(name="closeticket", description="Nur für Support-Mitglieder")
@@ -230,7 +228,8 @@ class BasicCommands(commands.Cog):
     async def to_do(self, interaction: discord.Interaction, todo: str, timer: int):
         timer *= 60
         await interaction.response.defer(ephemeral=True)
-        
+        await interaction.followup.send(embed=discord.Embed(title="Erinnerung gesetzt!", description=f"Du wirst in {timer//60} Minute(n) an folgendes erinnert:\n{todo}", colour=6702))
+
         while timer > 0:
             await asyncio.sleep(1)
             timer -= 1
@@ -291,7 +290,7 @@ class BasicCommands(commands.Cog):
         view = ChooseTicTacToeEnemy()
         await interaction.response.send_message(embed=discord.Embed(title="Gegen Spieler oder gegen Computer?", colour=6702), view=view, delete_after=8.0)
         sent_msg = await interaction.original_response()
-        bot_msg_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
+        set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "bot")
         
         
     @app_commands.command(name="hangman_vs_player", description="Das Spiel Hangman")
@@ -310,8 +309,8 @@ class BasicCommands(commands.Cog):
         view = HangmanPlayerReady(interaction.user.id, word)
         await interaction.response.send_message(embed=discord.Embed(title=f"Warte auf einen Gegner! Der erste, der auf 'Ready' klickt, spielt gegen {interaction.user}.", colour=6702), view=view)
         sent_msg = await interaction.original_response()
-        bot_msg_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
-        hg_msg_db[interaction.user.id] = sent_msg.id
+        set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "bot")
+        set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "hangman")
         
         
     @app_commands.command(name="hangman_vs_computer", description="Das Spiel Hangman")
@@ -336,8 +335,8 @@ class BasicCommands(commands.Cog):
         view = HangmanComputerReady(interaction.user.id, word)
         await interaction.response.send_message(embed=discord.Embed(title="Spiel starten?", description="Drücke **Ready** um loszulegen!", colour=6702), view=view)
         sent_msg = await interaction.original_response()
-        bot_msg_db[interaction.user.id] = (sent_msg.channel.id, sent_msg.id)
-        hg_msg_db[interaction.user.id] = sent_msg.id
+        set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "bot")
+        set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "hangman")
         
         
     @app_commands.command(name="quiz", description="Ein Quiz-Spiel")
