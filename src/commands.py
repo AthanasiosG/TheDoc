@@ -350,5 +350,70 @@ class BasicCommands(commands.Cog):
             question = data["frage"]
             answer_choices = data["antwortmöglichkeiten"]
             answer = data["lösung"]
-            view = Quiz(user_id, question, answer_choices, answer)
+            difficulty = data["schwierigkeit"]
+            view = Quiz(user_id, question, answer_choices, answer, difficulty)
             await interaction.response.send_message(embed=discord.Embed(title="Frage: "+ question, description="Antwortmöglichkeiten:", colour=6702), view=view)
+            
+    
+    @app_commands.command(name="quiz_points", description="Zeigt die Quiz-Punkte an")
+    async def quiz_points(self, interaction: discord.Interaction):       
+        with sqlite3.connect("database.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT points FROM quiz_points WHERE guild_id=? AND user_id=?", (interaction.guild.id, interaction.user.id))
+            points = cursor.fetchone()
+            if points:
+                points = points[0]
+            else:
+                points = None
+        
+        if points is not None:
+            await interaction.response.send_message(embed=discord.Embed(title=f"Du hast {points} Quiz-Punkte!", colour=6702))
+        else:
+            await interaction.response.send_message(embed=discord.Embed(title="Du hast noch keine Quiz-Punkte.", colour=6702), ephemeral=True)
+            
+    
+    @app_commands.command(name="quiz_leaderboard", description="Zeigt die Quiz-Punkte der User an")
+    async def quiz_leaderboard(self, interaction: discord.Interaction):
+        with sqlite3.connect("database.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT user_id, points FROM quiz_points WHERE guild_id=? ORDER BY points DESC LIMIT 10", (interaction.guild.id,))
+            leaderboard = cursor.fetchall()
+        
+        if not leaderboard:
+            await interaction.response.send_message(embed=discord.Embed(title="Es gibt noch keine Quiz-Punkte.", colour=6702), ephemeral=True)
+            return
+        
+        leaderboard_text = ""
+        
+        for idx, (user_id, points) in enumerate(leaderboard, start=1):
+            user = await interaction.guild.fetch_member(user_id)
+            if user.name in leaderboard_text:
+                continue
+            leaderboard_text += f"{idx}. {user.name}: {points} Punkte\n"
+        
+        await interaction.response.send_message(embed=discord.Embed(title="Quiz-Leaderboard:", description=leaderboard_text, colour=6702))
+        
+    
+    @app_commands.command(name="gamble_points", description="Gamble deine Quiz-Punkte")
+    async def gamble_points(self, interaction: discord.Interaction, points: int):
+        with sqlite3.connect("database.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT points FROM quiz_points WHERE guild_id=? AND user_id=?", (interaction.guild.id, interaction.user.id))
+            current_points = cursor.fetchone()
+            
+            if not current_points or current_points[0] < points:
+                await interaction.response.send_message(embed=discord.Embed(title="Du hast nicht genug Quiz-Punkte zum Gamen.", colour=6702), ephemeral=True)
+                return
+            
+            gamble_result = random.choice(["win", "lose"])
+            
+            if gamble_result == "win":
+                new_points = current_points[0] + points
+                cursor.execute("UPDATE quiz_points SET points=? WHERE guild_id=? AND user_id=?", (new_points, interaction.guild.id, interaction.user.id))
+                conn.commit()
+                await interaction.response.send_message(embed=discord.Embed(title=f"Du hast gewonnen! Du hast jetzt {new_points} Quiz-Punkte.", colour=6702))
+            else:
+                new_points = current_points[0] - points
+                cursor.execute("UPDATE quiz_points SET points=? WHERE guild_id=? AND user_id=?", (new_points, interaction.guild.id, interaction.user.id))
+                conn.commit()
+                await interaction.response.send_message(embed=discord.Embed(title=f"Du hast verloren! Du hast jetzt {new_points} Quiz-Punkte.", colour=6702))

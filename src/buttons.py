@@ -841,12 +841,13 @@ class HangmanEnemyComputerNZ(discord.ui.View):
             
             
 class Quiz(discord.ui.View):
-    def __init__(self, user_id, question, answer_choices, answer, *, timeout=None):
+    def __init__(self, user_id, question, answer_choices, answer, difficulty, *, timeout=None):
         super().__init__(timeout=timeout)
         self.user_id = user_id
         self.question = question
         self.answer_choices = answer_choices
         self.answer = answer
+        self.difficulty = difficulty
         for choice in answer_choices:
             button = discord.ui.Button(label=choice, style=discord.ButtonStyle.primary, disabled=False)
             button.callback = self.handle_field(choice)
@@ -859,8 +860,43 @@ class Quiz(discord.ui.View):
                 return
             
             if choice == self.answer:
-                await interaction.response.edit_message(embed=discord.Embed(title="Richtig!", description=f"Frage: {self.question}\nDie Antwort **{self.answer}** ist richtig!", color=discord.Color.green()), view=None)
+                if self.difficulty == 1:
+                    points = 2
+                elif self.difficulty == 2:
+                    points = 4
+                elif self.difficulty == 3:
+                    points = 6
+                elif self.difficulty == 4:
+                    points = 8
+                elif self.difficulty == 5:
+                    points = 10
+                await interaction.response.edit_message(embed=discord.Embed(title="Richtig!", description=f"Frage: {self.question}\nDie Antwort **{self.answer}** ist richtig!\nDu hast {points} Punkte gewonnen!", color=discord.Color.green()), view=None)
             else:
-                await interaction.response.edit_message(embed=discord.Embed(title="Falsch!", description=f"Frage: {self.question}\nDie richtige Antwort lautet: **{self.answer}**", color=discord.Color.red()), view=None)
+                if self.difficulty == 1:
+                    points = -1
+                elif self.difficulty == 2:
+                    points = -2
+                elif self.difficulty == 3:
+                    points = -3
+                elif self.difficulty == 4:
+                    points = -4
+                elif self.difficulty == 5:
+                    points = -5
+
+                with sqlite3.connect("database.db") as conn:
+                    cursor = conn.cursor()
+                    cursor.execute("SELECT points FROM quiz_points WHERE guild_id=? AND user_id=?", (interaction.guild.id, self.user_id))
+                    row = cursor.fetchone()
+                    current_points = row[0] if row else 0
+                    if current_points + points < 0:
+                        points = -current_points
+
+                await interaction.response.edit_message(embed=discord.Embed(title="Falsch!", description=f"Frage: {self.question}\nDie richtige Antwort lautet: **{self.answer}**\nDu hast {points} Punkte verloren!", color=discord.Color.red()), view=None)
+
+            with sqlite3.connect("database.db") as conn:
+                cursor = conn.cursor()
+                cursor.execute("INSERT OR IGNORE INTO quiz_points (guild_id, user_id, points) VALUES (?, ?, 0)", (interaction.guild.id, self.user_id))
+                cursor.execute("UPDATE quiz_points SET points=points+? WHERE guild_id=? AND user_id=?", (points, interaction.guild.id, self.user_id))
+                conn.commit()
                 
         return move
