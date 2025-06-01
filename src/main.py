@@ -25,10 +25,16 @@ async def on_guild_join(guild: discord.Guild):
     for channel in all_channels:
         if channel.name.lower() in ["willkommen", "welcome"]:
             await channel.send(embed=discord.Embed(title="Hallo! Ich bin TheDoc 😊", description="Mit /all_commands findet ihr alle verfügbaren Commands!", colour=6702))
-            break
+            with sqlite3.connect("database.db") as conn:
+                cursor = conn.cursor()
+                cursor.execute("INSERT OR IGNORE INTO auto_vc_control (guild_id, active) VALUES (?, ?)", (guild.id, 0))
+            return
         elif channel.name.lower() in ["general", "chat", "allgemein"]:
             await channel.send(embed=discord.Embed(title="Hallo! Ich bin TheDoc 😊", description="Mit /all_commands findet ihr alle verfügbaren Commands!", colour=6702))
-            break
+            with sqlite3.connect("database.db") as conn:
+                cursor = conn.cursor()
+                cursor.execute("INSERT OR IGNORE INTO auto_vc_control (guild_id, active) VALUES (?, ?)", (guild.id, 0))
+            return
         
         
 @client.event
@@ -63,7 +69,14 @@ async def on_member_remove(member):
         
     
 @client.event
-async def on_voice_state_update(member, before, after):  
+async def on_voice_state_update(member, before, after):
+    with sqlite3.connect("database.db") as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT active FROM auto_vc_control WHERE guild_id=?", (member.guild.id,))
+        result = cursor.fetchone()
+        if result is None or result[0] == 0:
+            return
+          
     if before.channel is None and after.channel is not None:
         channel = after.channel 
         if len(channel.members) == 1:

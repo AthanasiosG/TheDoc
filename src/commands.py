@@ -400,13 +400,10 @@ class BasicCommands(commands.Cog):
             cursor = conn.cursor()
             cursor.execute("SELECT points FROM quiz_points WHERE guild_id=? AND user_id=?", (interaction.guild.id, interaction.user.id))
             current_points = cursor.fetchone()
-            
             if not current_points or current_points[0] < points:
                 await interaction.response.send_message(embed=discord.Embed(title="Du hast nicht genug Quiz-Punkte zum Gamen.", colour=6702), ephemeral=True)
                 return
-            
             gamble_result = random.choice(["win", "lose"])
-            
             if gamble_result == "win":
                 new_points = current_points[0] + points
                 cursor.execute("UPDATE quiz_points SET points=? WHERE guild_id=? AND user_id=?", (new_points, interaction.guild.id, interaction.user.id))
@@ -417,3 +414,32 @@ class BasicCommands(commands.Cog):
                 cursor.execute("UPDATE quiz_points SET points=? WHERE guild_id=? AND user_id=?", (new_points, interaction.guild.id, interaction.user.id))
                 conn.commit()
                 await interaction.response.send_message(embed=discord.Embed(title=f"Du hast verloren! Du hast jetzt {new_points} Quiz-Punkte.", colour=6702))
+
+
+    @app_commands.command(name="auto_vc_control_help", description="Hilfe zum Auto-Voice-Channel-Control")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def auto_vc_control_help(self, interaction: discord.Interaction):
+        await interaction.response.send_message(embed=discord.Embed(title="Hilfe zum Auto-Voice-Channel-Control", description="Der Bot erstellt automatisch einen neuen Voice-Channel, wenn ein Benutzer einen Voice-Channel betritt. Es wird sozusagen immer geschaut, dass ein Voice-Channel zu jeder Zeit verfügbar ist. Er wird auch gelöscht, wenn der letzte Benutzer den Channel verlässt. Die Channel werden beginnend mit Talk0 benannt.", colour=6702))
+
+
+    @app_commands.command(name="auto_vc_control", description="Aktiviere oder deaktiviere Auto-Voice-Channel-Control")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def auto_vc_control(self, interaction: discord.Interaction):
+        with sqlite3.connect("database.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT active FROM auto_vc_control WHERE guild_id=?", (interaction.guild.id,))
+            result = cursor.fetchone()
+            if result is None:
+                cursor.execute("INSERT INTO auto_vc_control (guild_id, active) VALUES (?, ?)", (interaction.guild.id, 1))
+                conn.commit()
+                await interaction.response.send_message(embed=discord.Embed(title="Auto-Voice-Channel-Control aktiviert", colour=6702), ephemeral=True, delete_after=8.0)
+                return
+            else:
+                if result[0] == 1:
+                    cursor.execute("UPDATE auto_vc_control SET active=? WHERE guild_id=?", (0, interaction.guild.id))
+                    conn.commit()
+                    await interaction.response.send_message(embed=discord.Embed(title="Auto-Voice-Channel-Control deaktiviert!", colour=6702), ephemeral=True, delete_after=8.0)
+                else:
+                    cursor.execute("UPDATE auto_vc_control SET active=? WHERE guild_id=?", (1, interaction.guild.id))
+                    conn.commit()
+                    await interaction.response.send_message(embed=discord.Embed(title="Auto-Voice-Channel-Control aktiviert!", colour=6702), ephemeral=True, delete_after=8.0)

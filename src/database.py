@@ -74,6 +74,13 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS quiz_points(
     )
 """)
 
+cursor.execute("""CREATE TABLE IF NOT EXISTS auto_vc_control(
+    guild_id INTEGER NOT NULL,
+    active INTEGER NOT NULL DEFAULT 0,
+    primary key (guild_id)
+    )
+""")
+
 conn.commit()
 conn.close()
 
