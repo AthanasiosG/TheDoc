@@ -67,6 +67,13 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS bot_messages(
     )
 """)
 
+cursor.execute("""CREATE TABLE IF NOT EXISTS quiz_points(
+    guild_id INTEGER NOT NULL,
+    user_id INTEGER NOT NULL,
+    points INTEGER NOT NULL DEFAULT 0
+    )
+""")
+
 conn.commit()
 conn.close()
 
