@@ -21,6 +21,17 @@ class BasicCommands(commands.Cog):
             
         await interaction.response.send_message(embed=discord.Embed(title="Das sind alle verfügbaren Commands:", description=all_cmd, colour=6702))
 
+
+    @app_commands.command(name="bot_info", description="Info zum Bot")
+    async def info_about_bot(self, interaction: discord.Interaction):
+        await interaction.response.send_message(embed=discord.Embed(title="Ich heiße TheDoc und wurde von Thanos programmiert.", colour=6702))
+
+
+    @app_commands.command(name="server_owner", description="Gibt an wem der Server gehört")
+    async def server_owner(self, interaction: discord.Interaction):
+        owner = interaction.guild.owner
+        await interaction.response.send_message(embed=discord.Embed(title="Der Server gehört " + str(owner) +"!", colour=6702))
+
     
     @app_commands.command(name="verify", description="Verifizierung")
     async def verify(self, interaction: discord.Interaction):
@@ -44,15 +55,12 @@ class BasicCommands(commands.Cog):
             set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "bot")
 
 
-    @app_commands.command(name="bot_info", description="Info zum Bot")
-    async def info_about_bot(self, interaction: discord.Interaction):
-        await interaction.response.send_message(embed=discord.Embed(title="Ich heiße TheDoc und wurde von Thanos programmiert.", colour=6702))
-
-
-    @app_commands.command(name="server_owner", description="Gibt an wem der Server gehört")
-    async def server_owner(self, interaction: discord.Interaction):
-        owner = interaction.guild.owner
-        await interaction.response.send_message(embed=discord.Embed(title="Der Server gehört " + str(owner) +"!", colour=6702))
+    @app_commands.command(name="clear", description="Löscht Nachrichten im Channel")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def clear(self, interaction: discord.Interaction, amount: int):
+        await interaction.response.defer(ephemeral=True)
+        deleted = await interaction.channel.purge(limit=amount)
+        await interaction.followup.send(f"{len(deleted)} Nachrichten gelöscht.", ephemeral=True)
 
 
     @app_commands.command(name="kick", description="Einen User kicken")
@@ -98,19 +106,33 @@ class BasicCommands(commands.Cog):
         await interaction.response.send_message(embed=discord.Embed(title="Alle Rollen", description=roles, colour=6702))          
 
 
-    @app_commands.command(name="clear", description="Löscht Nachrichten im Channel")
+    @app_commands.command(name="rollensetup", description="Setup für Rollen -> Rollen die sich jeder holen kann")
     @app_commands.checks.has_permissions(administrator=True)
-    async def clear(self, interaction: discord.Interaction, amount: int):
-        await interaction.response.defer(ephemeral=True)
-        deleted = await interaction.channel.purge(limit=amount)
-        await interaction.followup.send(f"{len(deleted)} Nachrichten gelöscht.", ephemeral=True)
-
-
-    @app_commands.command(name="coinflip", description="Kopf oder Zahl")
-    async def coinflip(self, interaction: discord.Interaction):
-        coin = random.choice(["Kopf", "Zahl"])
-        coin = f"Du hast {coin} geworfen."
-        await interaction.response.send_message(embed=discord.Embed(title=coin, colour=6702))
+    async def role_setup(self, interaction: discord.Interaction):
+        await interaction.user.send(embed=discord.Embed(title="Setup für Rollen", description="Zuordnung von Rolle mit Emoji. Essentiell für /rollenauswahl.\n\nWICHTIG: Folgende Nachricht in genau dem Format senden:\n\n!rollensetup [rollenname]:[emoji] [rollenname]:[emoji]...\n'rollenname' = Tatsächlicher Name \n 'emoji' = gewünschtes Emoji für die Rolle\n\nBeispiel: !rollensetup VIP:💎 Member:🙄", colour=6702))
+        await interaction.response.send_message(embed=discord.Embed(title="Schau in deinen DMs.",description="Ich habe dir eine Anleitung geschickt.", colour=6702), ephemeral=True, delete_after=8.0)
+        
+        
+    @app_commands.command(name="rollenauswahl", description="Wähle die Rollen, die du haben möchtest")
+    async def chose_role(self, interaction: discord.Interaction):
+        view = ChooseRole(interaction)
+        role_emoji = ""
+        
+        with sqlite3.connect("database.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT * FROM role_setup WHERE guild_id=?", (interaction.guild.id,))     
+            for data in cursor.fetchall():
+                role_emoji += f"{data[1]}: {data[2]}\n"        
+            server_found = False
+            cursor.execute("SELECT * FROM role_setup")  
+            for data in cursor.fetchall():
+                if interaction.guild.id == data[0]:
+                    server_found = True
+            if server_found:
+                await interaction.response.send_message(embed=discord.Embed(title=f"Wähle deine Rollen:", description=role_emoji, colour=6702), view=view, ephemeral=True)
+                role_emoji = ""
+            else:
+                await interaction.response.send_message(embed=discord.Embed(title=f"Noch kein Rollen-Setup gemacht -> /rollensetup", colour=6702), ephemeral=True, delete_after=10.0)
 
 
     @app_commands.command(name="support_setup", description="Das Setup um das Supportsystem benutzen zu können")
@@ -193,48 +215,35 @@ class BasicCommands(commands.Cog):
             await interaction.response.send_message(embed=discord.Embed(title="Ticket sicher schließen?", description="Dieser Channel wird gelöscht. Fortfahren?", colour=6702), view=view, ephemeral=True, delete_after=10.0)
         else:
             await interaction.response.send_message("❌ Du hast keine Berechtigung für diesen Command.\n\nDiese Nachricht wird in kürze automatisch gelöscht...", ephemeral=True, delete_after=8.0)
+             
                 
-                
-    @app_commands.command(name="rollensetup", description="Setup für Rollen -> Rollen die sich jeder holen kann")
+    @app_commands.command(name="auto_vc_control_help", description="Hilfe zum Auto-Voice-Channel-Control")
     @app_commands.checks.has_permissions(administrator=True)
-    async def role_setup(self, interaction: discord.Interaction):
-        await interaction.user.send(embed=discord.Embed(title="Setup für Rollen", description="Zuordnung von Rolle mit Emoji. Essentiell für /rollenauswahl.\n\nWICHTIG: Folgende Nachricht in genau dem Format senden:\n\n!rollensetup [rollenname]:[emoji] [rollenname]:[emoji]...\n'rollenname' = Tatsächlicher Name \n 'emoji' = gewünschtes Emoji für die Rolle\n\nBeispiel: !rollensetup VIP:💎 Member:🙄", colour=6702))
-        await interaction.response.send_message(embed=discord.Embed(title="Schau in deinen DMs.",description="Ich habe dir eine Anleitung geschickt.", colour=6702), ephemeral=True, delete_after=8.0)
-        
-        
-    @app_commands.command(name="rollenauswahl", description="Wähle die Rollen, die du haben möchtest")
-    async def chose_role(self, interaction: discord.Interaction):
-        view = ChooseRole(interaction)
-        role_emoji = ""
-        
+    async def auto_vc_control_help(self, interaction: discord.Interaction):
+        await interaction.response.send_message(embed=discord.Embed(title="Hilfe zum Auto-Voice-Channel-Control", description="Der Bot erstellt automatisch einen neuen Voice-Channel, wenn ein Benutzer einen Voice-Channel betritt. Es wird sozusagen immer geschaut, dass ein Voice-Channel zu jeder Zeit verfügbar ist. Er wird auch gelöscht, wenn der letzte Benutzer den Channel verlässt. Die Channel werden beginnend mit Talk0 benannt.", colour=6702))
+
+
+    @app_commands.command(name="auto_vc_control", description="Aktiviere oder deaktiviere Auto-Voice-Channel-Control")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def auto_vc_control(self, interaction: discord.Interaction):
         with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT * FROM role_setup WHERE guild_id=?", (interaction.guild.id,))     
-            for data in cursor.fetchall():
-                role_emoji += f"{data[1]}: {data[2]}\n"        
-            server_found = False
-            cursor.execute("SELECT * FROM role_setup")  
-            for data in cursor.fetchall():
-                if interaction.guild.id == data[0]:
-                    server_found = True
-            if server_found:
-                await interaction.response.send_message(embed=discord.Embed(title=f"Wähle deine Rollen:", description=role_emoji, colour=6702), view=view, ephemeral=True)
-                role_emoji = ""
+            cursor.execute("SELECT active FROM auto_vc_control WHERE guild_id=?", (interaction.guild.id,))
+            result = cursor.fetchone()
+            if result is None:
+                cursor.execute("INSERT INTO auto_vc_control (guild_id, active) VALUES (?, ?)", (interaction.guild.id, 1))
+                conn.commit()
+                await interaction.response.send_message(embed=discord.Embed(title="Auto-Voice-Channel-Control aktiviert", colour=6702), ephemeral=True, delete_after=8.0)
+                return
             else:
-                await interaction.response.send_message(embed=discord.Embed(title=f"Noch kein Rollen-Setup gemacht -> /rollensetup", colour=6702), ephemeral=True, delete_after=10.0)
-                
-                
-    @app_commands.command(name="to_do", description="Setzt Erinnerung in x Min")
-    async def to_do(self, interaction: discord.Interaction, todo: str, timer: int):
-        timer *= 60
-        await interaction.response.defer(ephemeral=True)
-        await interaction.followup.send(embed=discord.Embed(title="Erinnerung gesetzt!", description=f"Du wirst in {timer//60} Minute(n) an folgendes erinnert:\n{todo}", colour=6702))
-
-        while timer > 0:
-            await asyncio.sleep(1)
-            timer -= 1
-            
-        await interaction.user.send(embed=discord.Embed(title="Erinnerung!", description=todo, colour=6702))
+                if result[0] == 1:
+                    cursor.execute("UPDATE auto_vc_control SET active=? WHERE guild_id=?", (0, interaction.guild.id))
+                    conn.commit()
+                    await interaction.response.send_message(embed=discord.Embed(title="Auto-Voice-Channel-Control deaktiviert!", colour=6702), ephemeral=True, delete_after=8.0)
+                else:
+                    cursor.execute("UPDATE auto_vc_control SET active=? WHERE guild_id=?", (1, interaction.guild.id))
+                    conn.commit()
+                    await interaction.response.send_message(embed=discord.Embed(title="Auto-Voice-Channel-Control aktiviert!", colour=6702), ephemeral=True, delete_after=8.0)
         
         
     @app_commands.command(name="blacklist", description="Zeigt die gesamt Blacklist an")
@@ -283,6 +292,26 @@ class BasicCommands(commands.Cog):
                     cursor.execute("DELETE FROM blacklist WHERE word=? AND guild_id=?", (word, interaction.guild.id))
                     conn.commit()
             await interaction.followup.send(f"{word} wurde aus der Blacklist entfernt!", ephemeral=True)
+
+            
+    @app_commands.command(name="coinflip", description="Kopf oder Zahl")
+    async def coinflip(self, interaction: discord.Interaction):
+        coin = random.choice(["Kopf", "Zahl"])
+        coin = f"Du hast {coin} geworfen."
+        await interaction.response.send_message(embed=discord.Embed(title=coin, colour=6702))
+
+
+    @app_commands.command(name="to_do", description="Setzt Erinnerung in x Min")
+    async def to_do(self, interaction: discord.Interaction, todo: str, timer: int):
+        timer *= 60
+        await interaction.response.defer(ephemeral=True)
+        await interaction.followup.send(embed=discord.Embed(title="Erinnerung gesetzt!", description=f"Du wirst in {timer//60} Minute(n) an folgendes erinnert:\n{todo}", colour=6702))
+
+        while timer > 0:
+            await asyncio.sleep(1)
+            timer -= 1
+            
+        await interaction.user.send(embed=discord.Embed(title="Erinnerung!", description=todo, colour=6702))
             
             
     @app_commands.command(name="tictactoe", description="Das Spiel TicTacToe")
@@ -394,8 +423,8 @@ class BasicCommands(commands.Cog):
         await interaction.response.send_message(embed=discord.Embed(title="Quiz-Leaderboard:", description=leaderboard_text, colour=6702))
         
     
-    @app_commands.command(name="gamble_points", description="Gamble deine Quiz-Punkte")
-    async def gamble_points(self, interaction: discord.Interaction, points: int):
+    @app_commands.command(name="gamble_quiz_points", description="Gamble deine Quiz-Punkte")
+    async def gamble_quiz_points(self, interaction: discord.Interaction, points: int):
         with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
             cursor.execute("SELECT points FROM quiz_points WHERE guild_id=? AND user_id=?", (interaction.guild.id, interaction.user.id))
@@ -415,31 +444,3 @@ class BasicCommands(commands.Cog):
                 conn.commit()
                 await interaction.response.send_message(embed=discord.Embed(title=f"Du hast verloren! Du hast jetzt {new_points} Quiz-Punkte.", colour=6702))
 
-
-    @app_commands.command(name="auto_vc_control_help", description="Hilfe zum Auto-Voice-Channel-Control")
-    @app_commands.checks.has_permissions(administrator=True)
-    async def auto_vc_control_help(self, interaction: discord.Interaction):
-        await interaction.response.send_message(embed=discord.Embed(title="Hilfe zum Auto-Voice-Channel-Control", description="Der Bot erstellt automatisch einen neuen Voice-Channel, wenn ein Benutzer einen Voice-Channel betritt. Es wird sozusagen immer geschaut, dass ein Voice-Channel zu jeder Zeit verfügbar ist. Er wird auch gelöscht, wenn der letzte Benutzer den Channel verlässt. Die Channel werden beginnend mit Talk0 benannt.", colour=6702))
-
-
-    @app_commands.command(name="auto_vc_control", description="Aktiviere oder deaktiviere Auto-Voice-Channel-Control")
-    @app_commands.checks.has_permissions(administrator=True)
-    async def auto_vc_control(self, interaction: discord.Interaction):
-        with sqlite3.connect("database.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT active FROM auto_vc_control WHERE guild_id=?", (interaction.guild.id,))
-            result = cursor.fetchone()
-            if result is None:
-                cursor.execute("INSERT INTO auto_vc_control (guild_id, active) VALUES (?, ?)", (interaction.guild.id, 1))
-                conn.commit()
-                await interaction.response.send_message(embed=discord.Embed(title="Auto-Voice-Channel-Control aktiviert", colour=6702), ephemeral=True, delete_after=8.0)
-                return
-            else:
-                if result[0] == 1:
-                    cursor.execute("UPDATE auto_vc_control SET active=? WHERE guild_id=?", (0, interaction.guild.id))
-                    conn.commit()
-                    await interaction.response.send_message(embed=discord.Embed(title="Auto-Voice-Channel-Control deaktiviert!", colour=6702), ephemeral=True, delete_after=8.0)
-                else:
-                    cursor.execute("UPDATE auto_vc_control SET active=? WHERE guild_id=?", (1, interaction.guild.id))
-                    conn.commit()
-                    await interaction.response.send_message(embed=discord.Embed(title="Auto-Voice-Channel-Control aktiviert!", colour=6702), ephemeral=True, delete_after=8.0)
