@@ -18,7 +18,7 @@ class VerifyButtons(discord.ui.View):
             verified_role = await guild.create_role(name="Verified", color=discord.Color.green())
             
         await interaction.user.add_roles(verified_role)
-        await interaction.response.send_message(embed=discord.Embed(title="Du bist nun verifiziert!", description="Diese Nachricht wird in kürze automatisch gelöscht...", colour=6702), ephemeral=True, delete_after=8.0)
+        await interaction.response.send_message(embed=discord.Embed(title="You are now verified!", description="This message will be automatically deleted soon...", colour=6702), ephemeral=True, delete_after=8.0)
         user_id = interaction.user.id
         
         msg_info = get_bot_message(user_id, "bot")
@@ -31,14 +31,14 @@ class VerifyButtons(discord.ui.View):
                 await message.delete()
                 delete_bot_message(user_id, "bot")
             except discord.NotFound:
-                print("Nachricht schon gelöscht oder nicht gefunden.")
+                print("Message already deleted or not found.")
             except Exception as error:
-                print(f"Fehler beim Löschen: {error}")    
+                print(f"Error while deleting: {error}")    
         
         
     @discord.ui.button(style=discord.ButtonStyle.red, label="Deny", disabled=False)
     async def Deny(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.send_message(embed=discord.Embed(title="Du musst akzeptieren oder du wirst gekickt.", description="Diese Nachricht wird in kürze automatisch gelöscht...", colour=6702), ephemeral=True, delete_after=8.0)
+        await interaction.response.send_message(embed=discord.Embed(title="You must accept or you will be kicked.", description="This message will be automatically deleted soon...", colour=6702), ephemeral=True, delete_after=8.0)
         
 
 
@@ -66,16 +66,16 @@ class SupportButtons(discord.ui.View):
         support_channel = discord.utils.get(all_channels, name=sup_team_ch_name)
         
         if self.reason is None:
-            self.reason = "Keiner angegeben"
+            self.reason = "None given"
         
-        msg = await support_channel.send(embed=discord.Embed(title="Ein Ticket wurde eröffnet", description="Grund: " + self.reason, colour=6702), content=support_role.mention, view=view)
+        msg = await support_channel.send(embed=discord.Embed(title="A ticket has been opened", description="Reason: " + self.reason, colour=6702), content=support_role.mention, view=view)
         set_bot_message(interaction.user.id, msg.channel.id, msg.id, "support")
-        await interaction.response.edit_message(embed=discord.Embed(title="Erfolg!", description="Ein Support-Mitarbeiter wird das Ticket in kürze bearbeiten...", colour=6702),view=None, delete_after=8.0)
+        await interaction.response.edit_message(embed=discord.Embed(title="Success!", description="A support member will handle your ticket soon...", colour=6702),view=None, delete_after=8.0)
         
         
     @discord.ui.button(style=discord.ButtonStyle.red, label="Cancel", disabled=False)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
-        await interaction.response.edit_message(embed=discord.Embed(title="Ticketanfrage abgebrochen.", colour=6702), view=None, delete_after=5.0)
+        await interaction.response.edit_message(embed=discord.Embed(title="Ticket request cancelled.", colour=6702), view=None, delete_after=5.0)
 
 
 
@@ -102,16 +102,16 @@ class SupportTeamButtons(discord.ui.View):
                 await message.delete()
                 delete_bot_message(interaction.user.id, "support")
             except discord.NotFound:
-                print("Support-Dialog-Nachricht schon gelöscht oder nicht gefunden.")
+                print("Support dialog message already deleted or not found.")
             except Exception as error:
-                print(f"Fehler beim Löschen der Support-Dialog-Nachricht: {error}")
+                print(f"Error while deleting support dialog message: {error}")
                 
         for role in guild.roles:
             if not role.permissions.administrator:
                 await sup_channel.set_permissions(role, read_messages=False)
 
-        msg = await interaction.followup.send(embed=discord.Embed(title=f"Ticket geöffnet: {sup_channel.mention}", colour=6702), ephemeral=True)
-        support_msg = await sup_channel.send(embed=discord.Embed(title="Ticket wurde geöffnet", description="Sie sind jetzt mit einem Support-Mitarbeiter verbunden.", colour=6702), content=user.mention)
+        msg = await interaction.followup.send(embed=discord.Embed(title=f"Ticket opened: {sup_channel.mention}", colour=6702), ephemeral=True)
+        support_msg = await sup_channel.send(embed=discord.Embed(title="Ticket opened", description="You are now connected to a support member.", colour=6702), content=user.mention)
         set_bot_message(self.user_id, sup_channel.id, support_msg.id, "support_ticket")
 
         try:
@@ -123,7 +123,7 @@ class SupportTeamButtons(discord.ui.View):
                 await message.delete()
                 delete_bot_message(self.user_id, "support")
         except Exception as e:
-            print(f"Fehler beim Löschen: {e}")
+            print(f"Error while deleting: {e}")
 
         await asyncio.sleep(15)
         await msg.delete()
@@ -131,7 +131,7 @@ class SupportTeamButtons(discord.ui.View):
         
     @discord.ui.button(style=discord.ButtonStyle.red, label="Close", disabled=False)
     async def close(self, interaction: discord.Interaction, _button: discord.ui.Button):
-        await interaction.response.send_message(embed=discord.Embed(title="Ticket geschlossen", colour=6702), ephemeral=True, delete_after=8.0)
+        await interaction.response.send_message(embed=discord.Embed(title="Ticket closed", colour=6702), ephemeral=True, delete_after=8.0)
         
         try:
             msg_info = get_bot_message(self.user_id, "support")
@@ -142,7 +142,7 @@ class SupportTeamButtons(discord.ui.View):
                 await msg.delete()
                 delete_bot_message(self.user_id, "support")
         except Exception as e:
-            print(f"Fehler beim Löschen: {e}")
+            print(f"Error while deleting: {e}")
           
             
 
@@ -151,7 +151,7 @@ class CloseTicketButtons(discord.ui.View):
         super().__init__(timeout=timeout)
         
         
-    @discord.ui.button(style=discord.ButtonStyle.green, label="Ja", disabled=False)
+    @discord.ui.button(style=discord.ButtonStyle.green, label="Yes", disabled=False)
     async def yes(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
         all_roles = guild.roles
@@ -164,7 +164,7 @@ class CloseTicketButtons(discord.ui.View):
             if channel.name.startswith("support-"):
                 await channel.delete()    
             else:
-                await interaction.response.send_message("**Fehler**\nDieser Befehl kann nicht in diesem Channel benutzt werden.", ephemeral=True, delete_after=8.0)
+                await interaction.response.send_message("**Error**\nThis command cannot be used in this channel.", ephemeral=True, delete_after=8.0)
 
 
 
@@ -194,10 +194,10 @@ class ChooseRole(discord.ui.View):
             
             if role_to_get not in member.roles:
                 await member.add_roles(role_to_get)
-                await interaction.response.send_message(embed=discord.Embed(title=f"Rolle **{role_name}** hinzugefügt!", colour=6702), ephemeral=True, delete_after=8.0)
+                await interaction.response.send_message(embed=discord.Embed(title=f"Role **{role_name}** added!", colour=6702), ephemeral=True, delete_after=8.0)
             else:
                 await member.remove_roles(role_to_get)
-                await interaction.response.send_message(embed=discord.Embed(title=f"Rolle **{role_name}** entfernt!", colour=6702), ephemeral=True, delete_after=8.0)
+                await interaction.response.send_message(embed=discord.Embed(title=f"Role **{role_name}** removed!", colour=6702), ephemeral=True, delete_after=8.0)
                 
         return handle
     
@@ -222,11 +222,11 @@ class ChooseTicTacToeEnemy(discord.ui.View):
                 await message.delete()
                 delete_bot_message(user_id, "bot")
             except discord.NotFound:
-                print("Nachricht schon gelöscht oder nicht gefunden.")
+                print("Message already deleted or not found.")
             except Exception as error:
-                print(f"Fehler beim Löschen: {error}")    
+                print(f"Error while deleting: {error}")    
 
-        await interaction.response.send_message(embed=discord.Embed(title="Start Game", description="Drücke **Ready** um mitzuspielen! Die ersten zwei sind dabei.", color=discord.Color.green()), view=view)
+        await interaction.response.send_message(embed=discord.Embed(title="Start Game", description="Press **Ready** to join! The first two will play.", color=discord.Color.green()), view=view)
 
 
     @discord.ui.button(label="Computer", style=discord.ButtonStyle.red, disabled=False)
@@ -246,11 +246,11 @@ class ChooseTicTacToeEnemy(discord.ui.View):
                 await message.delete()
                 delete_bot_message(user_id, "bot")
             except discord.NotFound:
-                print("Nachricht schon gelöscht oder nicht gefunden.")
+                print("Message already deleted or not found.")
             except Exception as error:
-                print(f"Fehler beim Löschen: {error}") 
+                print(f"Error while deleting: {error}") 
 
-        await interaction.response.send_message(embed=discord.Embed(title="Spiel läuft:", color=discord.Color.red()), view=view)
+        await interaction.response.send_message(embed=discord.Embed(title="Game running:", color=discord.Color.red()), view=view)
 
 
 
@@ -263,13 +263,13 @@ class TicTacToeReady(discord.ui.View):
     @discord.ui.button(label="Ready", style=discord.ButtonStyle.green, disabled=False)
     async def ready(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id in self.players:
-            await interaction.response.send_message("Du bist schon bereit!", ephemeral=True, delete_after=3.0)
+            await interaction.response.send_message("You are already ready!", ephemeral=True, delete_after=3.0)
             return
         
         self.players.append(interaction.user.id)
         
         if len(self.players) == 1:
-            await interaction.response.send_message(f"{interaction.user.mention} ist bereit! Warte auf einen zweiten Spieler...", ephemeral=True, delete_after=3.0)
+            await interaction.response.send_message(f"{interaction.user.mention} is ready! Waiting for a second player...", ephemeral=True, delete_after=3.0)
         elif len(self.players) == 2:
             user_id = self.players[0]
             opponent_id = self.players[1]
@@ -279,10 +279,10 @@ class TicTacToeReady(discord.ui.View):
             view = TicTacToeEnemyPlayer(user_id)
             for item in self.children:
                 item.disabled = True
-            await interaction.message.edit(embed=discord.Embed(title="Spiel läuft:", color=discord.Color.green()),view=view)
-            await interaction.response.send_message(f"Spiel startet zwischen <@{user_id}> (X) und <@{opponent_id}> (O)!", delete_after=3.0)
+            await interaction.message.edit(embed=discord.Embed(title="Game running:", color=discord.Color.green()),view=view)
+            await interaction.response.send_message(f"Game starts between <@{user_id}> (X) and <@{opponent_id}> (O)!", delete_after=3.0)
         else:
-            await interaction.response.send_message("Es sind schon zwei Spieler bereit!", ephemeral=True, delete_after=5.0)
+            await interaction.response.send_message("There are already two players ready!", ephemeral=True, delete_after=5.0)
 
 
 
@@ -302,7 +302,7 @@ class TicTacToeEnemyPlayer(discord.ui.View):
             board, count, opponent_id = load_ttt_board(user_id)
             
             if board is None:
-                await interaction.response.send_message("Das Spiel existiert nicht mehr.", ephemeral=True, delete_after=5.0)
+                await interaction.response.send_message("The game no longer exists.", ephemeral=True, delete_after=5.0)
                 return
 
             if opponent_id is None and interaction.user.id != user_id:
@@ -310,15 +310,15 @@ class TicTacToeEnemyPlayer(discord.ui.View):
                 save_ttt_board(user_id, board, count, opponent_id)
 
             if opponent_id is None:
-                await interaction.response.send_message("Warte auf einen zweiten Spieler...", ephemeral=True, delete_after=3.0)
+                await interaction.response.send_message("Waiting for a second player...", ephemeral=True, delete_after=3.0)
                 return
 
             if interaction.user.id not in [user_id, opponent_id]:
-                await interaction.response.send_message("Du bist kein Teilnehmer dieses Spiels.", ephemeral=True, delete_after=5.0)
+                await interaction.response.send_message("You are not a participant in this game.", ephemeral=True, delete_after=5.0)
                 return
 
             if (count % 2 == 0 and interaction.user.id != user_id) or (count % 2 == 1 and interaction.user.id != opponent_id):
-                await interaction.response.send_message("Du bist nicht am Zug.", ephemeral=True, delete_after=3.0)
+                await interaction.response.send_message("It's not your turn.", ephemeral=True, delete_after=3.0)
                 return
 
             board[index] = "X" if count % 2 == 0 else "O"
@@ -344,7 +344,7 @@ class TicTacToeEnemyPlayer(discord.ui.View):
                     else:
                         item.label = str(board[i])
                         item.disabled = False
-                await interaction.response.edit_message(embed=discord.Embed(title="Spiel läuft:", color=discord.Color.green()), view=view)
+                await interaction.response.edit_message(embed=discord.Embed(title="Game in progress:", color=discord.Color.green()), view=view)
         
         return move   
 
@@ -397,7 +397,7 @@ class TicTacToeEnemyComputer(discord.ui.View):
                     else:
                         item.label = str(board[i])
                         item.disabled = False
-                await interaction.response.edit_message(embed=discord.Embed(title="Spiel läuft:", color=discord.Color.red()), view=view)
+                await interaction.response.edit_message(embed=discord.Embed(title="Game in progress:", color=discord.Color.red()), view=view)
         
         return move
     
@@ -415,19 +415,19 @@ class HangmanPlayerReady(discord.ui.View):
     async def ready_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
         msg_info = get_bot_message(self.user_id, "hangman")
         if msg_info and msg_info[1] != interaction.message.id:
-            await interaction.response.send_message("Dieses Game wurde abgebrochen.", ephemeral=True, delete_after=5.0)
+            await interaction.response.send_message("This game has been cancelled.", ephemeral=True, delete_after=5.0)
             return
         
         if not is_hangman_active(self.user_id):
-            await interaction.response.send_message("Dieses Spiel existiert nicht mehr.", ephemeral=True, delete_after=5.0)
+            await interaction.response.send_message("This game no longer exists.", ephemeral=True, delete_after=5.0)
             return
 
         if interaction.user.id == self.user_id:
-            await interaction.response.send_message("Du bist der Spielleiter. Warte auf einen Gegner!", ephemeral=True, delete_after=3.0)
+            await interaction.response.send_message("You are the game master. Wait for an opponent!", ephemeral=True, delete_after=3.0)
             return
         
         if self.opponent_id is not None:
-            await interaction.response.send_message("Es wurde bereits ein Gegner gefunden!", ephemeral=True, delete_after=3.0)
+            await interaction.response.send_message("An opponent has already been found!", ephemeral=True, delete_after=3.0)
             return
         
         self.opponent_id = interaction.user.id
@@ -442,14 +442,14 @@ class HangmanPlayerReady(discord.ui.View):
         for item in self.children:
             item.disabled = True
 
-        await interaction.message.edit(embed=discord.Embed(title="Spiel läuft:", description=hg_word, color=discord.Color.green()), view=view)
-        await interaction.response.send_message(f"Das Spiel startet! <@{self.opponent_id}> ist der Gegner.", delete_after=3.0)
+        await interaction.message.edit(embed=discord.Embed(title="Game in progress:", description=hg_word, color=discord.Color.green()), view=view)
+        await interaction.response.send_message(f"The game starts! <@{self.opponent_id}> is the opponent.", delete_after=3.0)
         
         
     @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red, disabled=False)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
         if interaction.user.id != self.user_id:
-            await interaction.response.send_message("Nur der Spielleiter kann das Spiel abbrechen.", ephemeral=True, delete_after=5.0)
+            await interaction.response.send_message("Only the game master can cancel the game.", ephemeral=True, delete_after=5.0)
             return
 
         delete_hangman(self.user_id)
@@ -463,11 +463,11 @@ class HangmanPlayerReady(discord.ui.View):
                 await message.delete()
                 delete_bot_message(self.user_id, "hangman")
             except discord.NotFound:
-                print("Nachricht schon gelöscht oder nicht gefunden.")
+                print("Message already deleted or not found.")
             except Exception as error:
-                print(f"Fehler beim Löschen: {error}") 
+                print(f"Error while deleting: {error}") 
         
-        await interaction.response.send_message("Das Hangman-Spiel wurde abgebrochen.", ephemeral=True, delete_after=5.0)
+        await interaction.response.send_message("The Hangman game has been cancelled.", ephemeral=True, delete_after=5.0)
 
 
 
@@ -488,25 +488,25 @@ class HangmanEnemyPlayerAM(discord.ui.View):
             msg_info = get_bot_message(user_id, "hangman")
             
             if msg_info and msg_info[1] != interaction.message.id:
-                await interaction.response.send_message("Dieses Game wurde abgebrochen.", ephemeral=True, delete_after=5.0)
+                await interaction.response.send_message("This game has been cancelled.", ephemeral=True, delete_after=5.0)
                 return
             
             if not is_hangman_active(self.user_id):
-                await interaction.response.send_message("Dieses Spiel existiert nicht mehr.", ephemeral=True, delete_after=5.0)
+                await interaction.response.send_message("This game no longer exists.", ephemeral=True, delete_after=5.0)
                 return
 
             opponent_id, word, hg_word, failed_attempts, disabled, _ = load_hangman(user_id)
 
             if interaction.user.id != opponent_id:
-                await interaction.response.send_message("Du bist nicht der Spieler.", ephemeral=True, delete_after=5.0)
+                await interaction.response.send_message("You are not the player.", ephemeral=True, delete_after=5.0)
                 return
 
             if is_hg_game_over(word, hg_word, failed_attempts):
                 opponent = await interaction.guild.fetch_member(opponent_id)
                 user = await interaction.guild.fetch_member(user_id)
-                title = f"{opponent} hat gewonnen!" if "◻️" not in hg_word else f"{user} hat gewonnen!"
+                title = f"{opponent} has won!" if "◻️" not in hg_word else f"{user} has won!"
                 color = discord.Color.green() if "◻️" not in hg_word else discord.Color.red()
-                await interaction.response.edit_message(embed=discord.Embed(title=title, description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=color), view=None)
+                await interaction.response.edit_message(embed=discord.Embed(title=title, description=f"The word was: {word}\nFailed attempts: {failed_attempts}", color=color), view=None)
                 delete_bot_message(user_id, "hangman")
                 return
 
@@ -518,7 +518,7 @@ class HangmanEnemyPlayerAM(discord.ui.View):
                 save_hangman(user_id, opponent_id, word, hg_word, failed_attempts, disabled, 1)
                 if failed_attempts >= 6:
                     user = await interaction.guild.fetch_member(user_id)
-                    await interaction.response.edit_message(embed=discord.Embed(title=f"{user} hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.red()), view=None)
+                    await interaction.response.edit_message(embed=discord.Embed(title=f"{user} has won!", description=f"The word was: {word}\nFailed attempts: {failed_attempts}", color=discord.Color.red()), view=None)
                     delete_hangman(user_id)
                     return
 
@@ -537,10 +537,10 @@ class HangmanEnemyPlayerAM(discord.ui.View):
 
             if "◻️" not in hg_word:
                 opponent = await interaction.guild.fetch_member(opponent_id)
-                await interaction.response.edit_message(embed=discord.Embed(title=f"{opponent} hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.green()), view=None)
+                await interaction.response.edit_message(embed=discord.Embed(title=f"{opponent} has won!", description=f"The word was: {word}\nFailed attempts: {failed_attempts}", color=discord.Color.green()), view=None)
                 delete_hangman(user_id)
             else:
-                await interaction.response.edit_message(embed=discord.Embed(title=f"Spiel läuft: ({failed_attempts}/6 Fehlversuche)", description=hg_word, color=discord.Color.green()), view=HangmanEnemyPlayerAM(user_id))
+                await interaction.response.edit_message(embed=discord.Embed(title=f"Game in progress: ({failed_attempts}/6 failed attempts)", description=hg_word, color=discord.Color.green()), view=HangmanEnemyPlayerAM(user_id))
         
         return move
 
@@ -555,7 +555,7 @@ class HangmanEnemyPlayerAM(discord.ui.View):
         if opponent_id == interaction.user.id:
             await interaction.response.edit_message(view=HangmanEnemyPlayerNZ(self.user_id))
         else:
-            await interaction.response.send_message("Du bist nicht der Spieler.", ephemeral=True, delete_after=5.0)
+            await interaction.response.send_message("You are not the player.", ephemeral=True, delete_after=5.0)
 
 
 
@@ -576,25 +576,25 @@ class HangmanEnemyPlayerNZ(discord.ui.View):
             msg_info = get_bot_message(user_id, "hangman")
             
             if msg_info and msg_info[1] != interaction.message.id:
-                await interaction.response.send_message("Dieses Game wurde abgebrochen.", ephemeral=True, delete_after=5.0)
+                await interaction.response.send_message("This game has been cancelled.", ephemeral=True, delete_after=5.0)
                 return
             
             if not is_hangman_active(user_id):
-                await interaction.response.send_message("Dieses Spiel existiert nicht mehr.", ephemeral=True, delete_after=5.0)
+                await interaction.response.send_message("This game no longer exists.", ephemeral=True, delete_after=5.0)
                 return
 
             opponent_id, word, hg_word, failed_attempts, disabled, _ = load_hangman(user_id)
 
             if interaction.user.id != opponent_id:
-                await interaction.response.send_message("Du bist nicht der Spieler.", ephemeral=True, delete_after=5.0)
+                await interaction.response.send_message("You are not the player.", ephemeral=True, delete_after=5.0)
                 return
 
             if is_hg_game_over(word, hg_word, failed_attempts):
                 opponent = await interaction.guild.fetch_member(opponent_id)
                 user = await interaction.guild.fetch_member(user_id)
-                title = f"{opponent} hat gewonnen!" if "◻️" not in hg_word else f"{user} hat gewonnen!"
+                title = f"{opponent} has won!" if "◻️" not in hg_word else f"{user} has won!"
                 color = discord.Color.green() if "◻️" not in hg_word else discord.Color.red()
-                await interaction.response.edit_message(embed=discord.Embed(title=title, description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=color), view=None)
+                await interaction.response.edit_message(embed=discord.Embed(title=title, description=f"The word was: {word}\nFailed attempts: {failed_attempts}", color=color), view=None)
                 delete_bot_message(user_id, "hangman")
                 return
             
@@ -606,7 +606,7 @@ class HangmanEnemyPlayerNZ(discord.ui.View):
                 save_hangman(user_id, opponent_id, word, hg_word, failed_attempts, disabled, 1)
                 if failed_attempts >= 6:
                     user = await interaction.guild.fetch_member(user_id)
-                    await interaction.response.edit_message(embed=discord.Embed(title=f"{user} hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.red()), view=None)
+                    await interaction.response.edit_message(embed=discord.Embed(title=f"{user} has won!", description=f"The word was: {word}\nFailed attempts: {failed_attempts}", color=discord.Color.red()), view=None)
                     delete_hangman(user_id)
                     return
 
@@ -625,10 +625,10 @@ class HangmanEnemyPlayerNZ(discord.ui.View):
 
             if "◻️" not in hg_word:
                 opponent = await interaction.guild.fetch_member(opponent_id)
-                await interaction.response.edit_message(embed=discord.Embed(title=f"{opponent} hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.green()), view=None)
+                await interaction.response.edit_message(embed=discord.Embed(title=f"{opponent} has won!", description=f"The word was: {word}\nFailed attempts: {failed_attempts}", color=discord.Color.green()), view=None)
                 delete_bot_message(user_id, "hangman")
             else:
-                await interaction.response.edit_message(embed=discord.Embed(title=f"Spiel läuft: ({failed_attempts}/6 Fehlversuche)", description=hg_word, color=discord.Color.green()), view=HangmanEnemyPlayerNZ(user_id))
+                await interaction.response.edit_message(embed=discord.Embed(title=f"Game in progress: ({failed_attempts}/6 failed attempts)", description=hg_word, color=discord.Color.green()), view=HangmanEnemyPlayerNZ(user_id))
                 
         return move
 
@@ -643,7 +643,7 @@ class HangmanEnemyPlayerNZ(discord.ui.View):
         if opponent_id == interaction.user.id:
             await interaction.response.edit_message(view=HangmanEnemyPlayerAM(self.user_id))
         else:
-            await interaction.response.send_message("Du bist nicht der Spieler.", ephemeral=True, delete_after=5.0)
+            await interaction.response.send_message("You are not the player.", ephemeral=True, delete_after=5.0)
 
 
 
@@ -659,7 +659,7 @@ class HangmanComputerReady(discord.ui.View):
         view = HangmanEnemyComputerAM(self.user_id)
         
         if interaction.user.id != user_id:
-            await interaction.response.send_message("Du bist nicht der Spielleiter", ephemeral=True, delete_after=5.0)
+            await interaction.response.send_message("You are not the game master", ephemeral=True, delete_after=5.0)
             return    
             
         hg_word = ""
@@ -672,7 +672,7 @@ class HangmanComputerReady(discord.ui.View):
         for item in self.children:
             item.disabled = True
 
-        await interaction.response.edit_message(embed=discord.Embed(title="Spiel läuft:", description=hg_word, color=discord.Color.green()), view=view)
+        await interaction.response.edit_message(embed=discord.Embed(title="Game in progress:", description=hg_word, color=discord.Color.green()), view=view)
 
 
 
@@ -693,24 +693,24 @@ class HangmanEnemyComputerAM(discord.ui.View):
             msg_info = get_bot_message(user_id, "hangman")
             
             if msg_info and msg_info[1] != interaction.message.id:
-                await interaction.response.send_message("Dieses Game wurde abgebrochen.", ephemeral=True, delete_after=5.0)
+                await interaction.response.send_message("This game has been cancelled.", ephemeral=True, delete_after=5.0)
                 return
             
             if not is_hangman_active(user_id):
-                await interaction.response.send_message("Dieses Spiel existiert nicht mehr.", ephemeral=True, delete_after=5.0)
+                await interaction.response.send_message("This game no longer exists.", ephemeral=True, delete_after=5.0)
                 return
 
             if interaction.user.id != user_id:
-                await interaction.response.send_message("Du bist nicht der Spieler.", ephemeral=True, delete_after=5.0)
+                await interaction.response.send_message("You are not the player.", ephemeral=True, delete_after=5.0)
                 return
             
             opponent_id, word, hg_word, failed_attempts, disabled, _ = load_hangman(user_id)
 
             if is_hg_game_over(word, hg_word, failed_attempts):
                 user = await interaction.guild.fetch_member(user_id)
-                title = f"{user} hat gewonnen!" if "◻️" not in hg_word else "TheDoc hat gewonnen!"
+                title = f"{user} has won!" if "◻️" not in hg_word else "TheDoc has won!"
                 color = discord.Color.green() if "◻️" not in hg_word else discord.Color.red()
-                await interaction.response.edit_message(embed=discord.Embed(title=title, description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=color), view=None)
+                await interaction.response.edit_message(embed=discord.Embed(title=title, description=f"The word was: {word}\nFailed attempts: {failed_attempts}", color=color), view=None)
                 delete_bot_message(user_id, "hangman")
                 return
 
@@ -722,7 +722,7 @@ class HangmanEnemyComputerAM(discord.ui.View):
                 save_hangman(user_id, opponent_id, word, hg_word, failed_attempts, disabled, 1)
                 if failed_attempts >= 6:
                     user = await interaction.guild.fetch_member(user_id)
-                    await interaction.response.edit_message(embed=discord.Embed(title="TheDoc hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.red()), view=None)
+                    await interaction.response.edit_message(embed=discord.Embed(title="TheDoc has won!", description=f"The word was: {word}\nFailed attempts: {failed_attempts}", color=discord.Color.red()), view=None)
                     delete_hangman(user_id)
                     return
 
@@ -741,10 +741,10 @@ class HangmanEnemyComputerAM(discord.ui.View):
 
             if "◻️" not in hg_word:
                 user = await interaction.guild.fetch_member(user_id)
-                await interaction.response.edit_message(embed=discord.Embed(title=f"{user} hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.green()), view=None)
+                await interaction.response.edit_message(embed=discord.Embed(title=f"{user} has won!", description=f"The word was: {word}\nFailed attempts: {failed_attempts}", color=discord.Color.green()), view=None)
                 delete_bot_message(user_id, "hangman")
             else:
-                await interaction.response.edit_message(embed=discord.Embed(title=f"Spiel läuft: ({failed_attempts}/6 Fehlversuche)", description=hg_word, color=discord.Color.green()), view=HangmanEnemyComputerAM(user_id))
+                await interaction.response.edit_message(embed=discord.Embed(title=f"Game in progress: ({failed_attempts}/6 failed attempts)", description=hg_word, color=discord.Color.green()), view=HangmanEnemyComputerAM(user_id))
         
         return move
 
@@ -754,7 +754,7 @@ class HangmanEnemyComputerAM(discord.ui.View):
         if self.user_id == interaction.user.id:
             await interaction.response.edit_message(view=HangmanEnemyComputerNZ(self.user_id))
         else:
-            await interaction.response.send_message("Du bist nicht der Spieler.", ephemeral=True, delete_after=5.0)
+            await interaction.response.send_message("You are not the player.", ephemeral=True, delete_after=5.0)
     
     
 
@@ -775,24 +775,24 @@ class HangmanEnemyComputerNZ(discord.ui.View):
             msg_info = get_bot_message(user_id, "hangman")
             
             if msg_info and msg_info[1] != interaction.message.id:
-                await interaction.response.send_message("Dieses Game wurde abgebrochen.", ephemeral=True, delete_after=5.0)
+                await interaction.response.send_message("This game has been cancelled.", ephemeral=True, delete_after=5.0)
                 return
             
             if not is_hangman_active(user_id):
-                await interaction.response.send_message("Dieses Spiel existiert nicht mehr.", ephemeral=True, delete_after=5.0)
+                await interaction.response.send_message("This game no longer exists.", ephemeral=True, delete_after=5.0)
                 return
 
             if interaction.user.id != user_id:
-                await interaction.response.send_message("Du bist nicht der Spieler.", ephemeral=True, delete_after=5.0)
+                await interaction.response.send_message("You are not the player.", ephemeral=True, delete_after=5.0)
                 return
             
             opponent_id, word, hg_word, failed_attempts, disabled, _ = load_hangman(user_id)
 
             if is_hg_game_over(word, hg_word, failed_attempts):
                 user = await interaction.guild.fetch_member(user_id)
-                title = f"{user} hat gewonnen!" if "◻️" not in hg_word else "TheDoc hat gewonnen!"
+                title = f"{user} has won!" if "◻️" not in hg_word else "TheDoc has won!"
                 color = discord.Color.green() if "◻️" not in hg_word else discord.Color.red()
-                await interaction.response.edit_message(embed=discord.Embed(title=title, description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=color), view=None)
+                await interaction.response.edit_message(embed=discord.Embed(title=title, description=f"The word was: {word}\nFailed attempts: {failed_attempts}", color=color), view=None)
                 delete_bot_message(user_id, "hangman")
                 return
 
@@ -804,7 +804,7 @@ class HangmanEnemyComputerNZ(discord.ui.View):
                 save_hangman(user_id, opponent_id, word, hg_word, failed_attempts, disabled, 1)
                 if failed_attempts >= 6:
                     user = await interaction.guild.fetch_member(user_id)
-                    await interaction.response.edit_message(embed=discord.Embed(title="TheDoc hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.red()), view=None)
+                    await interaction.response.edit_message(embed=discord.Embed(title="TheDoc has won!", description=f"The word was: {word}\nFailed attempts: {failed_attempts}", color=discord.Color.red()), view=None)
                     delete_hangman(user_id)
                     return
 
@@ -823,10 +823,10 @@ class HangmanEnemyComputerNZ(discord.ui.View):
 
             if "◻️" not in hg_word:
                 user = await interaction.guild.fetch_member(user_id)
-                await interaction.response.edit_message(embed=discord.Embed(title=f"{user} hat gewonnen!", description=f"Das Wort lautete: {word}\nFehlversuche: {failed_attempts}", color=discord.Color.green()), view=None)
+                await interaction.response.edit_message(embed=discord.Embed(title=f"{user} has won!", description=f"The word was: {word}\nFailed attempts: {failed_attempts}", color=discord.Color.green()), view=None)
                 delete_bot_message(user_id, "hangman")
             else:
-                await interaction.response.edit_message(embed=discord.Embed(title=f"Spiel läuft: ({failed_attempts}/6 Fehlversuche)", description=hg_word, color=discord.Color.green()), view=HangmanEnemyComputerNZ(user_id))
+                await interaction.response.edit_message(embed=discord.Embed(title=f"Game in progress: ({failed_attempts}/6 failed attempts)", description=hg_word, color=discord.Color.green()), view=HangmanEnemyComputerNZ(user_id))
         
         return move
 
@@ -836,7 +836,7 @@ class HangmanEnemyComputerNZ(discord.ui.View):
         if self.user_id == interaction.user.id:
             await interaction.response.edit_message(view=HangmanEnemyComputerAM(self.user_id))
         else:
-            await interaction.response.send_message("Du bist nicht der Spieler.", ephemeral=True, delete_after=5.0)
+            await interaction.response.send_message("You are not the player.", ephemeral=True, delete_after=5.0)
             
             
             
@@ -856,7 +856,7 @@ class Quiz(discord.ui.View):
     def handle_field(self, choice):
         async def move(interaction: discord.Interaction):
             if interaction.user.id != self.user_id:
-                await interaction.response.send_message("Du bist nicht der Spieler.",ephemeral=True, delete_after=5.0)
+                await interaction.response.send_message("You are not the player.",ephemeral=True, delete_after=5.0)
                 return
             
             if choice == self.answer:
@@ -870,7 +870,7 @@ class Quiz(discord.ui.View):
                     points = 8
                 elif self.difficulty == 5:
                     points = 10
-                await interaction.response.edit_message(embed=discord.Embed(title="Richtig!", description=f"Frage: {self.question}\nDie Antwort **{self.answer}** ist richtig!\nDu hast {points} Punkte gewonnen!", color=discord.Color.green()), view=None)
+                await interaction.response.edit_message(embed=discord.Embed(title="Correct!", description=f"Question: {self.question}\nThe answer **{self.answer}** is correct!\nYou have gained {points} points!", color=discord.Color.green()), view=None)
             else:
                 if self.difficulty == 1:
                     points = -1
@@ -891,7 +891,7 @@ class Quiz(discord.ui.View):
                     if current_points + points < 0:
                         points = -current_points
 
-                await interaction.response.edit_message(embed=discord.Embed(title="Falsch!", description=f"Frage: {self.question}\nDie richtige Antwort lautet: **{self.answer}**\nDu hast {points} Punkte verloren!", color=discord.Color.red()), view=None)
+                await interaction.response.edit_message(embed=discord.Embed(title="Wrong!", description=f"Question: {self.question}\nThe correct answer is: **{self.answer}**\nYou have lost {points} points!", color=discord.Color.red()), view=None)
 
             with sqlite3.connect("database.db") as conn:
                 cursor = conn.cursor()

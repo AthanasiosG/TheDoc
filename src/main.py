@@ -24,7 +24,7 @@ async def on_guild_join(guild: discord.Guild):
     
     for channel in all_channels:
         if channel.name.lower() in ["willkommen", "welcome"]:
-            embed = discord.Embed(title="Hallo! Ich bin TheDoc 😊", description="Durch die Nutzung von TheDoc stimmst du den Nutzungsbedingungen sowie der Datenschutzerklärung zu. Nähere Infos mit /lizenz. Mit /all_commands findet ihr alle verfügbaren Commands!", colour=6702)
+            embed = discord.Embed(title="Hello! I am TheDoc 😊", description="By using TheDoc, you agree to the terms of use and privacy policy. More info with /license. Use /all_commands to see all available commands!", colour=6702)
             embed = embed.set_thumbnail(url="https://raw.githubusercontent.com/AthanasiosG/TheDoc/main/images/thedoc.png")
             await channel.send(embed=embed)
             with sqlite3.connect("database.db") as conn:
@@ -32,7 +32,7 @@ async def on_guild_join(guild: discord.Guild):
                 cursor.execute("INSERT OR IGNORE INTO auto_vc_control (guild_id, active) VALUES (?, ?)", (guild.id, 0))
             return
         elif channel.name.lower() in ["general", "chat", "allgemein"]:
-            embed = discord.Embed(title="Hallo! Ich bin TheDoc 😊", description="Durch die Nutzung von TheDoc stimmst du den Nutzungsbedingungen sowie der Datenschutzerklärung zu. Nähere Infos mit /lizenz. Mit /all_commands findet ihr alle verfügbaren Commands!", colour=6702)
+            embed = discord.Embed(title="Hello! I am TheDoc 😊", description="By using TheDoc, you agree to the terms of use and privacy policy. More info with /license. Use /all_commands to see all available commands!", colour=6702)
             embed = embed.set_thumbnail(url="https://raw.githubusercontent.com/AthanasiosG/TheDoc/main/images/thedoc.png")
             await channel.send(embed=embed)
             with sqlite3.connect("database.db") as conn:
@@ -48,7 +48,7 @@ async def on_member_join(member):
         with sqlite3.connect("database.db") as conn:
             cursor = conn.cursor()
             cursor.execute("DELETE FROM server_kicked WHERE user_id=?", (member.id,))
-        await member.send(embed=discord.Embed(title=f"Willkommen auf dem Server **{guild}**!", colour=6702)) 
+        await member.send(embed=discord.Embed(title=f"Welcome to the server **{guild}**!", colour=6702)) 
               
     
 @client.event
@@ -68,7 +68,7 @@ async def on_member_remove(member):
         for channel in all_channels:
             if channel.name.lower() in ["willkommen", "welcome"] and isinstance(channel, discord.TextChannel):
                 invite = await channel.create_invite(max_age=86400, max_uses=1, unique=True)
-                await member.send(embed=discord.Embed(title=f"Du hast **{guild}** verlassen:", description="Falls das ausversehen war, dann kannst du über diesen Link erneut joinen!", colour=6702, url=invite))
+                await member.send(embed=discord.Embed(title=f"You have left **{guild}**:", description="If this was a mistake, you can rejoin using this link!", colour=6702, url=invite))
                 break
         
     
@@ -96,9 +96,9 @@ async def on_voice_state_update(member, before, after):
 @client.tree.error
 async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
     if isinstance(error, app_commands.MissingPermissions):
-        await interaction.response.send_message("❌ Du hast keine Berechtigung für diesen Command.\n\nDiese Nachricht wird in kürze automatisch gelöscht...", ephemeral=True, delete_after=8.0)
+        await interaction.response.send_message("❌ You do not have permission for this command.\n\nThis message will be automatically deleted soon...", ephemeral=True, delete_after=8.0)
     else:
-        await interaction.response.send_message("Ein unbekannter Fehler ist aufgetreten.\n\nDiese Nachricht wird in kürze automatisch gelöscht...", ephemeral=True, delete_after=8.0)
+        await interaction.response.send_message("An unknown error has occurred.\n\nThis message will be automatically deleted soon...", ephemeral=True, delete_after=8.0)
 
 
 @client.event
@@ -106,7 +106,7 @@ async def on_message(msg):
     if msg.author.bot:
         return
     
-    if msg.content.startswith("!rollensetup") and msg.author.guild_permissions.administrator:
+    if msg.content.startswith("!role_setup") and msg.author.guild_permissions.administrator:
         msg_list = msg.content.split()
         msg_list.pop(0)
         with sqlite3.connect("database.db") as conn:
@@ -122,7 +122,7 @@ async def on_message(msg):
                 role_name, emoji = pair.split()
                 cursor.execute("INSERT OR IGNORE INTO role_setup VALUES (?, ?, ?)", (msg.guild.id, role_name, emoji))
                 conn.commit()
-        await msg.channel.send("Daten gespeichert.", delete_after=5.0)
+        await msg.channel.send("Data saved.", delete_after=5.0)
         await msg.delete()
            
     if not msg.author.bot and msg.content:
@@ -140,12 +140,12 @@ async def on_message(msg):
                     violations = cursor.fetchone()[0]
                     user = await msg.guild.fetch_member(user_id)
                     if violations <= 2:
-                        await user.send(embed=discord.Embed(title="VERWARNUNG!", description="Bei weiteren Verstößen wirst du vom Server gekickt!",colour=6702))
+                        await user.send(embed=discord.Embed(title="WARNING!", description="If you violate again, you will be kicked from the server!",colour=6702))
                     elif violations == 3:
                         cursor.execute("INSERT INTO server_kicked (user_id) VALUES (?)", (user.id,))
                         conn.commit()                             
                         await msg.guild.kick(user)
-                        await user.send(embed=discord.Embed(title="GEKICKT!", description="Du wurdest aufgrund von zu vielen Verstößen gekickt!", color= discord.Color.red()))
+                        await user.send(embed=discord.Embed(title="KICKED!", description="You have been kicked due to too many violations!", color= discord.Color.red()))
                         cursor.execute("DELETE FROM violation WHERE guild_id=? AND user_id=?", (msg.guild.id, user.id))
                         conn.commit() 
 
