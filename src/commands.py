@@ -20,6 +20,27 @@ class BasicCommands(commands.Cog):
             all_cmd += "/" + cmd + "\n"
             
         await interaction.response.send_message(embed=discord.Embed(title="Das sind alle verfügbaren Commands:", description=all_cmd, colour=6702))
+   
+   
+    @app_commands.command(name="lizenz", description="Nutzungsbedingungen & Datenschutzerklärung")
+    async def license(self, interaction: discord.Interaction):
+        text = (
+            "📄 **Nutzungsbedingungen für TheDoc**\n"
+            "1. Durch die Nutzung von TheDoc stimmst du den Nutzungsbedingungen sowie der Datenschutzerklärung zu.\n"
+            "2. Die Nutzung von TheDoc erfolgt freiwillig und auf eigenes Risiko.\n"
+            "3. Es wird keine Garantie auf Verfügbarkeit, Fehlerfreiheit oder Funktionalität gegeben.\n"
+            "4. Der Bot darf nicht für illegale, missbräuchliche oder schädliche Zwecke verwendet werden.\n"
+            "5. Die Nutzung kann jederzeit durch Entfernen des Bots beendet werden.\n"
+            "6. Mit der Nutzung akzeptierst du diese Bedingungen. Änderungen können jederzeit erfolgen.\n\n\n"
+            "🔒 **Datenschutz bei TheDoc**\n"
+            "1. TheDoc speichert zur Funktion bestimmter Features (z.B. Quiz, Rollenvergabe) technische Daten wie Server-ID, User-ID oder Emoji-Zuordnungen.\n"
+            "2. Es werden keine sensiblen personenbezogenen Daten gespeichert (z.B. Name, IP, E-Mail).\n"
+            "3. Die Daten dienen ausschließlich zur Funktion des Bots und werden nicht an Dritte weitergegeben.\n"
+            "4. Der Bot wird auf einem Server in der EU betrieben."
+        )
+
+        embed = discord.Embed(description=text, color=discord.Color.green())
+        await interaction.response.send_message(embed=embed)
 
 
     @app_commands.command(name="bot_info", description="Info zum Bot")
