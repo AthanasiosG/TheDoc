@@ -40,6 +40,7 @@ class BasicCommands(commands.Cog):
         )
 
         embed = discord.Embed(description=text, color=discord.Color.green())
+        embed.set_thumbnail(url="https://raw.githubusercontent.com/AthanasiosG/TheDoc/main/images/thedoc.png")
         await interaction.response.send_message(embed=embed)
 
 

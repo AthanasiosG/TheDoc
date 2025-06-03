@@ -24,13 +24,17 @@ async def on_guild_join(guild: discord.Guild):
     
     for channel in all_channels:
         if channel.name.lower() in ["willkommen", "welcome"]:
-            await channel.send(embed=discord.Embed(title="Hallo! Ich bin TheDoc 😊", description="Mit /all_commands findet ihr alle verfügbaren Commands!", colour=6702))
+            embed = discord.Embed(title="Hallo! Ich bin TheDoc 😊", description="Durch die Nutzung von TheDoc stimmst du den Nutzungsbedingungen sowie der Datenschutzerklärung zu. Nähere Infos mit /lizenz. Mit /all_commands findet ihr alle verfügbaren Commands!", colour=6702)
+            embed = embed.set_thumbnail(url="https://raw.githubusercontent.com/AthanasiosG/TheDoc/main/images/thedoc.png")
+            await channel.send(embed=embed)
             with sqlite3.connect("database.db") as conn:
                 cursor = conn.cursor()
                 cursor.execute("INSERT OR IGNORE INTO auto_vc_control (guild_id, active) VALUES (?, ?)", (guild.id, 0))
             return
         elif channel.name.lower() in ["general", "chat", "allgemein"]:
-            await channel.send(embed=discord.Embed(title="Hallo! Ich bin TheDoc 😊", description="Mit /all_commands findet ihr alle verfügbaren Commands!", colour=6702))
+            embed = discord.Embed(title="Hallo! Ich bin TheDoc 😊", description="Durch die Nutzung von TheDoc stimmst du den Nutzungsbedingungen sowie der Datenschutzerklärung zu. Nähere Infos mit /lizenz. Mit /all_commands findet ihr alle verfügbaren Commands!", colour=6702)
+            embed = embed.set_thumbnail(url="https://raw.githubusercontent.com/AthanasiosG/TheDoc/main/images/thedoc.png")
+            await channel.send(embed=embed)
             with sqlite3.connect("database.db") as conn:
                 cursor = conn.cursor()
                 cursor.execute("INSERT OR IGNORE INTO auto_vc_control (guild_id, active) VALUES (?, ?)", (guild.id, 0))
