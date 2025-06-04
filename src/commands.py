@@ -313,7 +313,36 @@ class BasicCommands(commands.Cog):
                     conn.commit()
             await interaction.followup.send(f"{word} has been removed from the blacklist!", ephemeral=True)
 
-            
+
+    @app_commands.command(name="violation_limit_help", description="Explains what the violation_limit command does.")
+    async def violation_limit_help(self, interaction: discord.Interaction):
+        text = (
+            "The /violation_limit command allows server administrators to set how many violations a user can have before being kicked. "
+            "By default, the limit is 3. When a user sends a blacklisted word, it counts as a violation. "
+            "If a user reaches the set limit, they will be kicked from the server. Warnings are sent for each violation before the limit is reached. "
+            "Use /violation_limit <amount> to set a new limit for your server."
+        )
+        
+        await interaction.response.send_message(embed=discord.Embed(title="Violation Limit Help", description=text, colour=6702))
+
+
+    @app_commands.command(name="violation_limit", description="Set the violation limit for your server.")
+    @app_commands.describe(amount="Number of violations before a user is kicked.")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def violation_limit(self, interaction: discord.Interaction, amount: int):
+        if amount < 1:
+            await interaction.response.send_message("The violation limit must be at least 1.", ephemeral=True)
+            return
+        with sqlite3.connect("database.db") as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "INSERT OR REPLACE INTO violation_limit (guild_id, amount) VALUES (?, ?)",
+                (interaction.guild.id, amount)
+            )
+            conn.commit()
+        await interaction.response.send_message(f"Violation limit set to {amount} for this server.", ephemeral=True)   
+        
+                 
     @app_commands.command(name="coinflip", description="Heads or tails")
     async def coinflip(self, interaction: discord.Interaction):
         coin = random.choice(["Heads", "Tails"])
@@ -461,4 +490,3 @@ class BasicCommands(commands.Cog):
                 cursor.execute("UPDATE quiz_points SET points=? WHERE guild_id=? AND user_id=?", (new_points, interaction.guild.id, interaction.user.id))
                 conn.commit()
                 await interaction.response.send_message(embed=discord.Embed(title=f"You lost! You now have {new_points} quiz points.", colour=6702))
-
