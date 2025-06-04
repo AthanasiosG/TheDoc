@@ -8,7 +8,7 @@ class VerifyButtons(discord.ui.View):
         super().__init__(timeout=timeout)
 
 
-    @discord.ui.button(style=discord.ButtonStyle.green, label="Accept", disabled=False)
+    @discord.ui.button(label="Accept", style=discord.ButtonStyle.green, disabled=False)
     async def accept(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
         roles = await guild.fetch_roles()
@@ -36,7 +36,7 @@ class VerifyButtons(discord.ui.View):
                 print(f"Error while deleting: {error}")    
         
         
-    @discord.ui.button(style=discord.ButtonStyle.red, label="Deny", disabled=False)
+    @discord.ui.button(label="Deny", style=discord.ButtonStyle.red, disabled=False)
     async def Deny(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message(embed=discord.Embed(title="You must accept or you will be kicked.", description="This message will be automatically deleted soon...", colour=6702), ephemeral=True, delete_after=8.0)
         
@@ -48,7 +48,7 @@ class SupportButtons(discord.ui.View):
         self.reason = reason
 
 
-    @discord.ui.button(style=discord.ButtonStyle.green, label="Yes", disabled=False)
+    @discord.ui.button(label="Yes", style=discord.ButtonStyle.green, disabled=False)
     async def yes(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
         user_id = interaction.user.id
@@ -73,7 +73,7 @@ class SupportButtons(discord.ui.View):
         await interaction.response.edit_message(embed=discord.Embed(title="Success!", description="A support member will handle your ticket soon...", colour=6702),view=None, delete_after=8.0)
         
         
-    @discord.ui.button(style=discord.ButtonStyle.red, label="Cancel", disabled=False)
+    @discord.ui.button(label="Cancel", style=discord.ButtonStyle.red, disabled=False)
     async def cancel(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.edit_message(embed=discord.Embed(title="Ticket request cancelled.", colour=6702), view=None, delete_after=5.0)
 
@@ -85,8 +85,8 @@ class SupportTeamButtons(discord.ui.View):
         self.user_id = user_id
 
 
-    @discord.ui.button(style=discord.ButtonStyle.green, label="Open", disabled=False)
-    async def open(self, interaction: discord.Interaction, _button: discord.ui.Button):
+    @discord.ui.button(label="Open", style=discord.ButtonStyle.green, disabled=False)
+    async def open(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
         user = guild.get_member(self.user_id)
@@ -129,8 +129,8 @@ class SupportTeamButtons(discord.ui.View):
         await msg.delete()
         
         
-    @discord.ui.button(style=discord.ButtonStyle.red, label="Close", disabled=False)
-    async def close(self, interaction: discord.Interaction, _button: discord.ui.Button):
+    @discord.ui.button(label="Close", style=discord.ButtonStyle.red, disabled=False)
+    async def close(self, interaction: discord.Interaction, button: discord.ui.Button):
         await interaction.response.send_message(embed=discord.Embed(title="Ticket closed", colour=6702), ephemeral=True, delete_after=8.0)
         
         try:
@@ -151,7 +151,7 @@ class CloseTicketButtons(discord.ui.View):
         super().__init__(timeout=timeout)
         
         
-    @discord.ui.button(style=discord.ButtonStyle.green, label="Yes", disabled=False)
+    @discord.ui.button(label="Yes", style=discord.ButtonStyle.green, disabled=False)
     async def yes(self, interaction: discord.Interaction, button: discord.ui.Button):
         guild = interaction.guild
         all_roles = guild.roles
