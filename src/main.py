@@ -9,7 +9,7 @@ intents = discord.Intents.all()
 client = commands.Bot(command_prefix="=", intents=intents)
 
 load_dotenv() 
-TOKEN = os.getenv("DISCORD_TOKEN")
+TOKEN = os.getenv("BOT_TOKEN")
 
 
 @client.event
