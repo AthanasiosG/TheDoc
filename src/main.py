@@ -130,6 +130,9 @@ async def on_message(msg):
             cursor = conn.cursor()
             cursor.execute("SELECT word FROM blacklist WHERE guild_id=?", (msg.guild.id,))
             blacklisted_words = [data[0] for data in cursor.fetchall()]
+            cursor.execute("SELECT amount FROM violation_limit WHERE guild_id=?", (msg.guild.id,))
+            result = cursor.fetchone()
+            violation_limit = result[0] if result else 3
             for content in msg.content.split():
                 if content in blacklisted_words:
                     await msg.delete()
@@ -139,9 +142,9 @@ async def on_message(msg):
                     cursor.execute("SELECT COUNT(*) FROM violation WHERE guild_id=? AND user_id=?", (guild_id, user_id))
                     violations = cursor.fetchone()[0]
                     user = await msg.guild.fetch_member(user_id)
-                    if violations <= 2:
-                        await user.send(embed=discord.Embed(title="WARNING!", description="If you violate again, you will be kicked from the server!",colour=6702))
-                    elif violations == 3:
+                    if violations < violation_limit:
+                        await user.send(embed=discord.Embed(title="WARNING!", description=f"If you violate again, you will be kicked from the server at {violation_limit} violations!",colour=6702))
+                    elif violations == violation_limit:
                         cursor.execute("INSERT INTO server_kicked (user_id) VALUES (?)", (user.id,))
                         conn.commit()                             
                         await msg.guild.kick(user)

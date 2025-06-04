@@ -18,6 +18,13 @@ cursor.execute("""CREATE TABLE IF NOT EXISTS violation(
     )
 """)
 
+cursor.execute("""CREATE TABLE IF NOT EXISTS violation_limit(
+    guild_id INTEGER NOT NULL,
+    amount INTEGER NOT NULL DEFAULT 3,
+    PRIMARY KEY (guild_id)
+    )
+""")
+
 cursor.execute("""CREATE TABLE IF NOT EXISTS sup_setup(
     guild_id INTEGER NOT NULL,
     sup_ch_name TEXT NOT NULL,
