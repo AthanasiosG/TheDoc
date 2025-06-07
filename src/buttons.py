@@ -1,6 +1,7 @@
 import discord, aiosqlite, asyncio
 from database import *
 from mini_games import *
+from bot_msg_manager import *
 
 
 class VerifyButtons(discord.ui.View):

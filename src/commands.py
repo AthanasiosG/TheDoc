@@ -4,6 +4,7 @@ from discord.ext import commands
 from buttons import *
 from database import *
 from mini_games import *
+from bot_msg_manager import *
 
 
 class BasicCommands(commands.Cog):
