@@ -1,4 +1,4 @@
-import discord, random, sqlite3, asyncio, json, random
+import discord, random, aiosqlite, aiofiles, asyncio, json, random
 from discord import app_commands
 from discord.ext import commands
 from buttons import *
@@ -74,7 +74,7 @@ class BasicCommands(commands.Cog):
             view = VerifyButtons()
             await interaction.response.send_message(embed=embed, view=view)
             sent_msg = await interaction.original_response()
-            set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "bot")
+            await set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "bot")
 
 
     @app_commands.command(name="clear", description="Deletes messages in the channel")
@@ -88,10 +88,10 @@ class BasicCommands(commands.Cog):
     @app_commands.command(name="kick", description="Kick a user")
     @app_commands.checks.has_permissions(administrator=True)
     async def kick(self, interaction: discord.Interaction, user: discord.User, reason: str):
-        with sqlite3.connect("database.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute("INSERT INTO server_kicked VALUES (?)", (user.id,))
-            conn.commit()
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("INSERT INTO server_kicked VALUES (?)", (user.id,))
+            await conn.commit()
             
         await interaction.guild.kick(user=user, reason=reason)
         await user.send(embed=discord.Embed(title="You have been kicked for the following reason:", description=reason, color=discord.Color.red()))
@@ -110,10 +110,10 @@ class BasicCommands(commands.Cog):
         await interaction.user.send(embed=discord.Embed(title=msg, description="Reason: " + reason, color=discord.Color.red()))
         await interaction.response.defer(ephemeral=True)        
         await interaction.followup.send(f"Process completed. User banned.", ephemeral=True)
-        with sqlite3.connect("database.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute("INSERT INTO server_kicked VALUES (?)", (user.id,))
-            conn.commit()
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("INSERT INTO server_kicked VALUES (?)", (user.id,))
+            await conn.commit()
 
 
     @app_commands.command(name="roles", description="All available roles")
@@ -135,17 +135,17 @@ class BasicCommands(commands.Cog):
         
     @app_commands.command(name="choose_roles", description="Choose the roles you want")
     async def chose_role(self, interaction: discord.Interaction):
-        view = ChooseRole(interaction)
+        view = await ChooseRole.create(interaction)
         role_emoji = ""
         
-        with sqlite3.connect("database.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM role_setup WHERE guild_id=?", (interaction.guild.id,))     
-            for data in cursor.fetchall():
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("SELECT * FROM role_setup WHERE guild_id=?", (interaction.guild.id,))     
+            for data in await cursor.fetchall():
                 role_emoji += f"{data[1]}: {data[2]}\n"        
             server_found = False
-            cursor.execute("SELECT * FROM role_setup")  
-            for data in cursor.fetchall():
+            await cursor.execute("SELECT * FROM role_setup")  
+            for data in await cursor.fetchall():
                 if interaction.guild.id == data[0]:
                     server_found = True
             if server_found:
@@ -162,10 +162,10 @@ class BasicCommands(commands.Cog):
         all_roles = await interaction.guild.fetch_roles()
         await interaction.response.defer(ephemeral=True)
 
-        with sqlite3.connect("database.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM sup_setup WHERE guild_id=?", (interaction.guild.id,))
-            data = cursor.fetchone()
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("SELECT * FROM sup_setup WHERE guild_id=?", (interaction.guild.id,))
+            data = await cursor.fetchone()
             if data:
                 channel_one = discord.utils.get(all_channels, name=data[1])
                 channel_two = discord.utils.get(all_channels, name=data[2])
@@ -173,12 +173,12 @@ class BasicCommands(commands.Cog):
                     await channel_one.delete()
                 if channel_two:
                     await channel_two.delete()
-                cursor.execute("DELETE FROM sup_setup WHERE guild_id=?", (interaction.guild.id,))
-                conn.commit()
+                await cursor.execute("DELETE FROM sup_setup WHERE guild_id=?", (interaction.guild.id,))
+                await conn.commit()
             await interaction.guild.create_text_channel(name=sup_ch_name)
             support_team_channel = await interaction.guild.create_text_channel(name=sup_team_ch_name)
-            cursor.execute("INSERT INTO sup_setup VALUES (?,?,?,?)", (interaction.guild.id, sup_ch_name, sup_team_ch_name, sup_role))
-            conn.commit()
+            await cursor.execute("INSERT INTO sup_setup VALUES (?,?,?,?)", (interaction.guild.id, sup_ch_name, sup_team_ch_name, sup_role))
+            await conn.commit()
 
         support_role = discord.utils.get(interaction.guild.roles, name=sup_role)
 
@@ -197,14 +197,14 @@ class BasicCommands(commands.Cog):
         view = SupportButtons(reason)
         all_channels = await guild.fetch_channels()
 
-        with sqlite3.connect("database.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT guild_id FROM sup_setup WHERE guild_id=?", (interaction.guild.id,))
-            if not cursor.fetchall():
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("SELECT guild_id FROM sup_setup WHERE guild_id=?", (interaction.guild.id,))
+            if not await cursor.fetchall():
                 await interaction.response.send_message(embed=discord.Embed(title="Error:", description="No setup has been done yet. Please run /support_setup.", colour=6702), ephemeral=True, delete_after=10.0)
             else:   
-                cursor.execute("SELECT * FROM sup_setup")
-                for data in cursor.fetchall():
+                await cursor.execute("SELECT * FROM sup_setup")
+                for data in await cursor.fetchall():
                     if data[0] == interaction.guild.id:
                         sup_ch_name = data[1]
                 sup_channel = discord.utils.get(all_channels, name=sup_ch_name)
@@ -224,10 +224,10 @@ class BasicCommands(commands.Cog):
         view = CloseTicketButtons()
         user_sup_role = user.get_role(sup_role.id)
 
-        with sqlite3.connect("database.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM sup_setup")
-            for data in cursor.fetchall():
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("SELECT * FROM sup_setup")
+            for data in await cursor.fetchall():
                 if data[0] == interaction.guild.id:
                     sup_role = discord.utils.get(all_roles, name=data[3])
                     
@@ -246,23 +246,23 @@ class BasicCommands(commands.Cog):
     @app_commands.command(name="auto_vc_control", description="Enable or disable Auto-Voice-Channel-Control")
     @app_commands.checks.has_permissions(administrator=True)
     async def auto_vc_control(self, interaction: discord.Interaction):
-        with sqlite3.connect("database.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT active FROM auto_vc_control WHERE guild_id=?", (interaction.guild.id,))
-            result = cursor.fetchone()
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("SELECT active FROM auto_vc_control WHERE guild_id=?", (interaction.guild.id,))
+            result = await cursor.fetchone()
             if result is None:
-                cursor.execute("INSERT INTO auto_vc_control (guild_id, active) VALUES (?, ?)", (interaction.guild.id, 1))
-                conn.commit()
-                await interaction.response.send_message(embed=discord.Embed(title="Auto-Voice-Channel-Control enabled", colour=6702), ephemeral=True, delete_after=8.0)
+                await cursor.execute("INSERT INTO auto_vc_control (guild_id, active) VALUES (?, ?)", (interaction.guild.id, 1))
+                await conn.commit()
+                await interaction.response.send_message(embed=discord.Embed(title="Auto-Voice-Channel-Control enabled!", colour=6702), ephemeral=True, delete_after=8.0)
                 return
             else:
                 if result[0] == 1:
-                    cursor.execute("UPDATE auto_vc_control SET active=? WHERE guild_id=?", (0, interaction.guild.id))
-                    conn.commit()
+                    await cursor.execute("UPDATE auto_vc_control SET active=? WHERE guild_id=?", (0, interaction.guild.id))
+                    await conn.commit()
                     await interaction.response.send_message(embed=discord.Embed(title="Auto-Voice-Channel-Control disabled!", colour=6702), ephemeral=True, delete_after=8.0)
                 else:
-                    cursor.execute("UPDATE auto_vc_control SET active=? WHERE guild_id=?", (1, interaction.guild.id))
-                    conn.commit()
+                    await cursor.execute("UPDATE auto_vc_control SET active=? WHERE guild_id=?", (1, interaction.guild.id))
+                    await conn.commit()
                     await interaction.response.send_message(embed=discord.Embed(title="Auto-Voice-Channel-Control enabled!", colour=6702), ephemeral=True, delete_after=8.0)
         
         
@@ -270,10 +270,10 @@ class BasicCommands(commands.Cog):
     async def blacklist(self, interaction: discord.Interaction):
         all_words = ""
         
-        with sqlite3.connect("database.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM blacklist")
-            for data in cursor.fetchall():
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("SELECT * FROM blacklist")
+            for data in await cursor.fetchall():
                 if data[0] == interaction.guild.id:
                     all_words += f"{data[1]}\n"
             await interaction.response.send_message(embed=discord.Embed(title="All blocked words:", description=all_words, colour=6702), delete_after=15.0)
@@ -284,18 +284,18 @@ class BasicCommands(commands.Cog):
     async def blacklist_add(self, interaction: discord.Interaction, word: str):
         await interaction.response.defer(ephemeral=True)
         
-        with sqlite3.connect("database.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM blacklist")
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("SELECT * FROM blacklist")
             word_found = False
-            for data in cursor.fetchall():
+            for data in await cursor.fetchall():
                 if data[1] == word:
                     await interaction.followup.send("This word is already on the blacklist.")
                     word_found = True
                     break
             if not word_found:
-                cursor.execute("INSERT INTO blacklist VALUES (?,?)", (interaction.guild.id, word))
-                conn.commit()
+                await cursor.execute("INSERT INTO blacklist VALUES (?,?)", (interaction.guild.id, word))
+                await conn.commit()
                 await interaction.followup.send(f"{word} has been added to the blacklist!", ephemeral=True)
                     
                     
@@ -304,13 +304,13 @@ class BasicCommands(commands.Cog):
     async def blacklist_remove(self, interaction: discord.Interaction, word: str):
         await interaction.response.defer(ephemeral=True)
         
-        with sqlite3.connect("database.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM blacklist")
-            for data in cursor.fetchall():
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("SELECT * FROM blacklist")
+            for data in await cursor.fetchall():
                 if data[0] == interaction.guild.id:
-                    cursor.execute("DELETE FROM blacklist WHERE word=? AND guild_id=?", (word, interaction.guild.id))
-                    conn.commit()
+                    await cursor.execute("DELETE FROM blacklist WHERE word=? AND guild_id=?", (word, interaction.guild.id))
+                    await conn.commit()
             await interaction.followup.send(f"{word} has been removed from the blacklist!", ephemeral=True)
 
 
@@ -327,19 +327,15 @@ class BasicCommands(commands.Cog):
 
 
     @app_commands.command(name="violation_limit", description="Set the violation limit for your server.")
-    @app_commands.describe(amount="Number of violations before a user is kicked.")
     @app_commands.checks.has_permissions(administrator=True)
     async def violation_limit(self, interaction: discord.Interaction, amount: int):
         if amount < 1:
             await interaction.response.send_message("The violation limit must be at least 1.", ephemeral=True)
             return
-        with sqlite3.connect("database.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "INSERT OR REPLACE INTO violation_limit (guild_id, amount) VALUES (?, ?)",
-                (interaction.guild.id, amount)
-            )
-            conn.commit()
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("INSERT OR REPLACE INTO violation_limit (guild_id, amount) VALUES (?, ?)", (interaction.guild.id, amount))
+            await conn.commit()
         await interaction.response.send_message(f"Violation limit set to {amount} for this server.", ephemeral=True)   
         
                  
@@ -367,61 +363,62 @@ class BasicCommands(commands.Cog):
         view = ChooseTicTacToeEnemy()
         await interaction.response.send_message(embed=discord.Embed(title="Against player or computer?", colour=6702), view=view, delete_after=8.0)
         sent_msg = await interaction.original_response()
-        set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "bot")
+        await set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "bot")
         
         
     @app_commands.command(name="hangman_vs_player", description="The game Hangman vs Player")
     async def hangman_player(self, interaction: discord.Interaction, word: str):
-        with sqlite3.connect("database.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT active FROM hangman WHERE user_id=?", (interaction.user.id,))
-            row = cursor.fetchone()
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("SELECT active FROM hangman WHERE user_id=?", (interaction.user.id,))
+            row = await cursor.fetchone()
             if row and row[0] == 1:
-                deactivate_hangman(interaction.user.id)
-            cursor.execute("DELETE FROM hangman WHERE user_id=?", (interaction.user.id,))
-            conn.commit()
-            cursor.execute("INSERT INTO hangman (user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons, active) VALUES (?, ?, ?, ?, ?, ?, ?)", (interaction.user.id, None, word, "", 0, "", 1))
-            conn.commit()
+                await deactivate_hangman(interaction.user.id)
+            await cursor.execute("DELETE FROM hangman WHERE user_id=?", (interaction.user.id,))
+            await conn.commit()
+            await cursor.execute("INSERT INTO hangman (user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons, active) VALUES (?, ?, ?, ?, ?, ?, ?)", (interaction.user.id, None, word, "", 0, "", 1))
+            await conn.commit()
 
         view = HangmanPlayerReady(interaction.user.id, word)
         await interaction.response.send_message(embed=discord.Embed(title=f"Waiting for an opponent! The first to click 'Ready' will play against {interaction.user}.", colour=6702), view=view)
         sent_msg = await interaction.original_response()
-        set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "bot")
-        set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "hangman")
+        await set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "bot")
+        await set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "hangman")
         
         
     @app_commands.command(name="hangman_vs_computer", description="The game Hangman vs Computer")
     async def hangman_computer(self, interaction: discord.Interaction):
-        with open("json/hg_words.json", "r", encoding="UTF-8") as file:
-            data = json.load(file)
+        async with aiofiles.open("json/hg_words.json", "r", encoding="UTF-8") as file:
+            content = await file.read()
+            data = json.loads(content)
             hg_words = data["words"]
             num = random.randint(0,100)
             word = hg_words[num]
                 
-        with sqlite3.connect("database.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT active FROM hangman WHERE user_id=?", (interaction.user.id,))
-            row = cursor.fetchone()
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("SELECT active FROM hangman WHERE user_id=?", (interaction.user.id,))
+            row = await cursor.fetchone()
             if row and row[0] == 1:
-                deactivate_hangman(interaction.user.id)
-            cursor.execute("DELETE FROM hangman WHERE user_id=?", (interaction.user.id,))
-            conn.commit()
-            cursor.execute("INSERT INTO hangman (user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons, active) VALUES (?, ?, ?, ?, ?, ?, ?)", (interaction.user.id, None, word, "", 0, "", 1))
-            conn.commit()
-
+                await deactivate_hangman(interaction.user.id)
+            await cursor.execute("DELETE FROM hangman WHERE user_id=?", (interaction.user.id,))
+            await conn.commit()
+            await cursor.execute("INSERT INTO hangman (user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons, active) VALUES (?, ?, ?, ?, ?, ?, ?)", (interaction.user.id, None, word, "", 0, "", 1))
+            await conn.commit()
         view = HangmanComputerReady(interaction.user.id, word)
         await interaction.response.send_message(embed=discord.Embed(title="Start game?", description="Press **Ready** to start!", colour=6702), view=view)
         sent_msg = await interaction.original_response()
-        set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "bot")
-        set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "hangman")
+        await set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "bot")
+        await set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "hangman")
         
         
     @app_commands.command(name="quiz", description="A quiz game")
     async def quiz(self, interaction: discord.Interaction):
         user_id = interaction.user.id
         
-        with open("json/quiz.json", "r", encoding="UTF-8") as file:
-            data = json.load(file)
+        async with aiofiles.open("json/quiz.json", "r", encoding="UTF-8") as file:
+            content = await file.read()
+            data = json.loads(content)
             num = random.randint(1,1000)
             data = data[num]
             question = data["frage"]
@@ -434,10 +431,10 @@ class BasicCommands(commands.Cog):
     
     @app_commands.command(name="quiz_points", description="Shows the quiz points")
     async def quiz_points(self, interaction: discord.Interaction):       
-        with sqlite3.connect("database.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT points FROM quiz_points WHERE guild_id=? AND user_id=?", (interaction.guild.id, interaction.user.id))
-            points = cursor.fetchone()
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("SELECT points FROM quiz_points WHERE guild_id=? AND user_id=?", (interaction.guild.id, interaction.user.id))
+            points = await cursor.fetchone()
             if points:
                 points = points[0]
             else:
@@ -451,10 +448,10 @@ class BasicCommands(commands.Cog):
     
     @app_commands.command(name="quiz_leaderboard", description="Shows the quiz leaderboard")
     async def quiz_leaderboard(self, interaction: discord.Interaction):
-        with sqlite3.connect("database.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT user_id, points FROM quiz_points WHERE guild_id=? ORDER BY points DESC LIMIT 10", (interaction.guild.id,))
-            leaderboard = cursor.fetchall()
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("SELECT user_id, points FROM quiz_points WHERE guild_id=? ORDER BY points DESC LIMIT 10", (interaction.guild.id,))
+            leaderboard = await cursor.fetchall()
         
         if not leaderboard:
             await interaction.response.send_message(embed=discord.Embed(title="There are no quiz points yet.", colour=6702), ephemeral=True)
@@ -472,21 +469,21 @@ class BasicCommands(commands.Cog):
     
     @app_commands.command(name="gamble_quiz_points", description="Gamble your quiz points")
     async def gamble_quiz_points(self, interaction: discord.Interaction, points: int):
-        with sqlite3.connect("database.db") as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT points FROM quiz_points WHERE guild_id=? AND user_id=?", (interaction.guild.id, interaction.user.id))
-            current_points = cursor.fetchone()
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("SELECT points FROM quiz_points WHERE guild_id=? AND user_id=?", (interaction.guild.id, interaction.user.id))
+            current_points = await cursor.fetchone()
             if not current_points or current_points[0] < points:
                 await interaction.response.send_message(embed=discord.Embed(title="You do not have enough quiz points to gamble.", colour=6702), ephemeral=True)
                 return
             gamble_result = random.choice(["win", "lose"])
             if gamble_result == "win":
                 new_points = current_points[0] + points
-                cursor.execute("UPDATE quiz_points SET points=? WHERE guild_id=? AND user_id=?", (new_points, interaction.guild.id, interaction.user.id))
-                conn.commit()
+                await cursor.execute("UPDATE quiz_points SET points=? WHERE guild_id=? AND user_id=?", (new_points, interaction.guild.id, interaction.user.id))
+                await conn.commit()
                 await interaction.response.send_message(embed=discord.Embed(title=f"You won! You now have {new_points} quiz points.", colour=6702))
             else:
                 new_points = current_points[0] - points
-                cursor.execute("UPDATE quiz_points SET points=? WHERE guild_id=? AND user_id=?", (new_points, interaction.guild.id, interaction.user.id))
-                conn.commit()
+                await cursor.execute("UPDATE quiz_points SET points=? WHERE guild_id=? AND user_id=?", (new_points, interaction.guild.id, interaction.user.id))
+                await conn.commit()
                 await interaction.response.send_message(embed=discord.Embed(title=f"You lost! You now have {new_points} quiz points.", colour=6702))
