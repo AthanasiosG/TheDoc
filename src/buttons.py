@@ -911,7 +911,9 @@ class Quiz(discord.ui.View):
             if interaction.user.id != self.user_id:
                 await interaction.response.send_message("You are not the player.",ephemeral=True, delete_after=5.0)
                 return
-            
+            else:
+                user = interaction.user
+                
             if choice == self.answer:
                 if self.difficulty == 1:
                     points = 2
@@ -935,10 +937,9 @@ class Quiz(discord.ui.View):
                     points = -4
                 elif self.difficulty == 5:
                     points = -5
-
                 async with aiosqlite.connect("database.db") as conn:
                     cursor = await conn.cursor()
-                    await cursor.execute("SELECT points FROM quiz_points WHERE guild_id=? AND user_id=?", (interaction.guild.id, self.user_id))
+                    await cursor.execute("SELECT points FROM quiz_points WHERE user_id=?", (self.user_id,))
                     row = await cursor.fetchone()
                     current_points = row[0] if row else 0
                     if current_points + points < 0:
@@ -947,8 +948,8 @@ class Quiz(discord.ui.View):
 
             async with aiosqlite.connect("database.db") as conn:
                 cursor = await conn.cursor()
-                await cursor.execute("INSERT OR IGNORE INTO quiz_points (guild_id, user_id, points) VALUES (?, ?, 0)", (interaction.guild.id, self.user_id))
-                await cursor.execute("UPDATE quiz_points SET points=points+? WHERE guild_id=? AND user_id=?", (points, interaction.guild.id, self.user_id))
+                await cursor.execute("INSERT OR IGNORE INTO quiz_points (user_id, user_name, points) VALUES (?, ?, 0)", (self.user_id, user.name))
+                await cursor.execute("UPDATE quiz_points SET points=points+? WHERE user_id=?", (points, self.user_id))
                 await conn.commit()
                 
         return move

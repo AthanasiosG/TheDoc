@@ -433,7 +433,7 @@ class BasicCommands(commands.Cog):
     async def quiz_points(self, interaction: discord.Interaction):       
         async with aiosqlite.connect("database.db") as conn:
             cursor = await conn.cursor()
-            await cursor.execute("SELECT points FROM quiz_points WHERE guild_id=? AND user_id=?", (interaction.guild.id, interaction.user.id))
+            await cursor.execute("SELECT points FROM quiz_points WHERE user_id=?", (interaction.user.id,))
             points = await cursor.fetchone()
             if points:
                 points = points[0]
@@ -450,7 +450,7 @@ class BasicCommands(commands.Cog):
     async def quiz_leaderboard(self, interaction: discord.Interaction):
         async with aiosqlite.connect("database.db") as conn:
             cursor = await conn.cursor()
-            await cursor.execute("SELECT user_id, points FROM quiz_points WHERE guild_id=? ORDER BY points DESC LIMIT 10", (interaction.guild.id,))
+            await cursor.execute("SELECT user_name, points FROM quiz_points ORDER BY points DESC LIMIT 10")
             leaderboard = await cursor.fetchall()
         
         if not leaderboard:
@@ -459,11 +459,9 @@ class BasicCommands(commands.Cog):
         
         leaderboard_text = ""
         
-        for idx, (user_id, points) in enumerate(leaderboard, start=1):
-            user = await interaction.guild.fetch_member(user_id)
-            if user.name in leaderboard_text:
-                continue
-            leaderboard_text += f"{idx}. {user.name}: {points} points\n"
+        for idx, (user_name, points) in enumerate(leaderboard, start=1):
+            leaderboard_text += f"{idx}. {user_name}: {points} 🪙\n"
+            
         await interaction.response.send_message(embed=discord.Embed(title="Quiz Leaderboard:", description=leaderboard_text, colour=6702))
         
     
@@ -471,7 +469,7 @@ class BasicCommands(commands.Cog):
     async def gamble_quiz_points(self, interaction: discord.Interaction, points: int):
         async with aiosqlite.connect("database.db") as conn:
             cursor = await conn.cursor()
-            await cursor.execute("SELECT points FROM quiz_points WHERE guild_id=? AND user_id=?", (interaction.guild.id, interaction.user.id))
+            await cursor.execute("SELECT points FROM quiz_points WHERE user_id=?", (interaction.user.id,))
             current_points = await cursor.fetchone()
             if not current_points or current_points[0] < points:
                 await interaction.response.send_message(embed=discord.Embed(title="You do not have enough quiz points to gamble.", colour=6702), ephemeral=True)
@@ -479,11 +477,11 @@ class BasicCommands(commands.Cog):
             gamble_result = random.choice(["win", "lose"])
             if gamble_result == "win":
                 new_points = current_points[0] + points
-                await cursor.execute("UPDATE quiz_points SET points=? WHERE guild_id=? AND user_id=?", (new_points, interaction.guild.id, interaction.user.id))
+                await cursor.execute("UPDATE quiz_points SET points=? WHERE user_id=?", (new_points, interaction.user.id))
                 await conn.commit()
                 await interaction.response.send_message(embed=discord.Embed(title=f"You won! You now have {new_points} quiz points.", colour=6702))
             else:
                 new_points = current_points[0] - points
-                await cursor.execute("UPDATE quiz_points SET points=? WHERE guild_id=? AND user_id=?", (new_points, interaction.guild.id, interaction.user.id))
+                await cursor.execute("UPDATE quiz_points SET points=? WHERE user_id=?", (new_points, interaction.user.id))
                 await conn.commit()
                 await interaction.response.send_message(embed=discord.Embed(title=f"You lost! You now have {new_points} quiz points.", colour=6702))

@@ -78,9 +78,10 @@ class DatabaseManager:
             """)
 
             await cursor.execute("""CREATE TABLE IF NOT EXISTS quiz_points(
-                guild_id INTEGER NOT NULL,
                 user_id INTEGER NOT NULL,
-                points INTEGER NOT NULL DEFAULT 0
+                user_name TEXT NOT NULL,
+                points INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (user_id)
                 )
             """)
 
