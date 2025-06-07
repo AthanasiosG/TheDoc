@@ -1,12 +1,12 @@
-import sqlite3, random, ast
+import aiosqlite, random, ast
 
 
 #tictactoe
-def load_ttt_board(user_id):
-    with sqlite3.connect("database.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT board, count, opponent_id FROM tictactoe_board WHERE user_id=?", (user_id,))
-        row = cursor.fetchone()
+async def load_ttt_board(user_id):
+    async with aiosqlite.connect("database.db") as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("SELECT board, count, opponent_id FROM tictactoe_board WHERE user_id=?", (user_id,))
+        row = await cursor.fetchone()
         if row:
             board = ast.literal_eval(row[0])
             count = row[1]
@@ -15,23 +15,23 @@ def load_ttt_board(user_id):
             board = [i for i in range(1, 10)]
             count = 0
             opponent_id = None
-            cursor.execute("INSERT OR REPLACE INTO tictactoe_board (user_id, board, count, opponent_id) VALUES (?, ?, ?, ?)", (user_id, str(board), count, opponent_id))
-            conn.commit()
+            await cursor.execute("INSERT OR REPLACE INTO tictactoe_board (user_id, board, count, opponent_id) VALUES (?, ?, ?, ?)", (user_id, str(board), count, opponent_id))
+            await conn.commit()
         return board, count, opponent_id
 
 
-def save_ttt_board(user_id, board, count, opponent_id=None):
-    with sqlite3.connect("database.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("INSERT OR REPLACE INTO tictactoe_board (user_id, board, count, opponent_id) VALUES (?, ?, ?, ?)", (user_id, str(board), count, opponent_id))
-        conn.commit()
+async def save_ttt_board(user_id, board, count, opponent_id=None):
+    async with aiosqlite.connect("database.db") as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("INSERT OR REPLACE INTO tictactoe_board (user_id, board, count, opponent_id) VALUES (?, ?, ?, ?)", (user_id, str(board), count, opponent_id))
+        await conn.commit()
 
 
-def delete_ttt_board(user_id):
-    with sqlite3.connect("database.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM tictactoe_board WHERE user_id=?", (user_id,))
-        conn.commit()
+async def delete_ttt_board(user_id):
+    async with aiosqlite.connect("database.db") as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("DELETE FROM tictactoe_board WHERE user_id=?", (user_id,))
+        await conn.commit()
         
         
 def get_ttt_updated_board(board: list) -> str:
@@ -98,11 +98,11 @@ def is_ttt_board_game_over(board):
 
 #hangman
 
-def load_hangman(user_id):
-    with sqlite3.connect("database.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT opponent_id, word, hg_word, failed_attempts, disabled_buttons, active FROM hangman WHERE user_id=?", (user_id,))
-        row = cursor.fetchone()
+async def load_hangman(user_id):
+    async with aiosqlite.connect("database.db") as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("SELECT opponent_id, word, hg_word, failed_attempts, disabled_buttons, active FROM hangman WHERE user_id=?", (user_id,))
+        row = await cursor.fetchone()
         if row:
             opponent_id, word, hg_word, failed_attempts, disabled_buttons, active = row
             if disabled_buttons:
@@ -116,42 +116,42 @@ def load_hangman(user_id):
             failed_attempts = 0
             disabled_buttons = set()
             active = 1
-            cursor.execute("INSERT OR REPLACE INTO hangman (user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons, active) VALUES (?, ?, ?, ?, ?, ?, ?)", (user_id, opponent_id, word, hg_word, failed_attempts, "", active))
-            conn.commit()
+            await cursor.execute("INSERT OR REPLACE INTO hangman (user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons, active) VALUES (?, ?, ?, ?, ?, ?, ?)", (user_id, opponent_id, word, hg_word, failed_attempts, "", active))
+            await conn.commit()
         
         return opponent_id, word, hg_word, failed_attempts, disabled_buttons, active
 
 
-def save_hangman(user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons, active=1):
-    with sqlite3.connect("database.db") as conn:
-        cursor = conn.cursor()
+async def save_hangman(user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons, active=1):
+    async with aiosqlite.connect("database.db") as conn:
+        cursor = await conn.cursor()
         if isinstance(disabled_buttons, set):
             disabled_buttons_str = ",".join(disabled_buttons)
         else:
             disabled_buttons_str = disabled_buttons or ""
-        cursor.execute("INSERT OR REPLACE INTO hangman (user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons, active) VALUES (?, ?, ?, ?, ?, ?, ?)", (user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons_str, active))
-        conn.commit()
+        await cursor.execute("INSERT OR REPLACE INTO hangman (user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons, active) VALUES (?, ?, ?, ?, ?, ?, ?)", (user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons_str, active))
+        await conn.commit()
 
 
-def delete_hangman(user_id):
-    with sqlite3.connect("database.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("DELETE FROM hangman WHERE user_id=?", (user_id,))
-        conn.commit()
+async def delete_hangman(user_id):
+    async with aiosqlite.connect("database.db") as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("DELETE FROM hangman WHERE user_id=?", (user_id,))
+        await conn.commit()
 
 
-def deactivate_hangman(user_id):
-    with sqlite3.connect("database.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("UPDATE hangman SET active=0 WHERE user_id=?", (user_id,))
-        conn.commit()
+async def deactivate_hangman(user_id):
+    async with aiosqlite.connect("database.db") as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("UPDATE hangman SET active=0 WHERE user_id=?", (user_id,))
+        await conn.commit()
 
 
-def is_hangman_active(user_id):
-    with sqlite3.connect("database.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT active FROM hangman WHERE user_id=?", (user_id,))
-        row = cursor.fetchone()
+async def is_hangman_active(user_id):
+    async with aiosqlite.connect("database.db") as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("SELECT active FROM hangman WHERE user_id=?", (user_id,))
+        row = await cursor.fetchone()
         return row and row[0] == 1
 
 
@@ -170,17 +170,17 @@ def is_hg_game_over(word: str, hg_word: str, failed_attempts: int) -> bool:
     return False
 
 
-def get_disabled_buttons(user_id):
-    with sqlite3.connect("database.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT disabled_buttons FROM hangman WHERE user_id=?", (user_id,))
-        row = cursor.fetchone()
+async def get_disabled_buttons(user_id):
+    async with aiosqlite.connect("database.db") as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("SELECT disabled_buttons FROM hangman WHERE user_id=?", (user_id,))
+        row = await cursor.fetchone()
         if row and row[0]:
             return set(row[0].split(","))
         return set()
 
-def set_disabled_buttons(user_id, disabled_buttons):
-    with sqlite3.connect("database.db") as conn:
-        cursor = conn.cursor()
-        cursor.execute("UPDATE hangman SET disabled_buttons=? WHERE user_id=?", (",".join(disabled_buttons), user_id))
-        conn.commit()
+async def set_disabled_buttons(user_id, disabled_buttons):
+    async with aiosqlite.connect("database.db") as conn:
+        cursor = await conn.cursor()
+        await cursor.execute("UPDATE hangman SET disabled_buttons=? WHERE user_id=?", (",".join(disabled_buttons), user_id))
+        await conn.commit()
