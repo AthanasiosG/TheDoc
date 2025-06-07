@@ -93,9 +93,14 @@ class BasicCommands(commands.Cog):
             cursor = await conn.cursor()
             await cursor.execute("INSERT INTO server_kicked VALUES (?)", (user.id,))
             await conn.commit()
-            
+        
         await interaction.guild.kick(user=user, reason=reason)
-        await user.send(embed=discord.Embed(title="You have been kicked for the following reason:", description=reason, color=discord.Color.red()))
+        
+        try:
+            await user.send(embed=discord.Embed(title="You have been kicked for the following reason:", description=reason, color=discord.Color.red()))
+        except discord.Forbidden:
+            print("User has DMs disabled.")
+        
         msg = f"{user} was successfully kicked!"
         await interaction.user.send(embed=discord.Embed(title=msg, description="Reason: " + reason, color=discord.Color.red()))
         await interaction.response.defer(ephemeral=True)        
@@ -105,8 +110,18 @@ class BasicCommands(commands.Cog):
     @app_commands.command(name="ban", description="Ban a user")
     @app_commands.checks.has_permissions(administrator=True)
     async def ban(self, interaction: discord.Interaction, user: discord.User, reason: str):
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("INSERT INTO server_kicked VALUES (?)", (user.id,))
+            await conn.commit()
+            
         await interaction.guild.ban(user=user, reason=reason)
-        await user.send(embed=discord.Embed(title="You have been banned for the following reason:", description=reason, color=discord.Color.red()))
+        
+        try:
+            await user.send(embed=discord.Embed(title="You have been banned for the following reason:", description=reason, color=discord.Color.red()))
+        except discord.Forbidden:
+            print("User has DMs disabled.")
+        
         msg = f"{user} was successfully banned!"
         await interaction.user.send(embed=discord.Embed(title=msg, description="Reason: " + reason, color=discord.Color.red()))
         await interaction.response.defer(ephemeral=True)        
@@ -130,7 +145,11 @@ class BasicCommands(commands.Cog):
     @app_commands.command(name="role_setup", description="Setup for roles -> roles that everyone can get")
     @app_commands.checks.has_permissions(administrator=True)
     async def role_setup(self, interaction: discord.Interaction):
-        await interaction.user.send(embed=discord.Embed(title="Role setup", description="Assign roles with emojis. Essential for /choose_roles.\n\nIMPORTANT: Send the following message in exactly this format:\n\n!role_setup [role_name]:[emoji] [role_name]:[emoji]...\n'role_name' = actual name \n 'emoji' = desired emoji for the role\n\nExample: !role_setup VIP:💎 Member:🙄", colour=6702))
+        try:
+            await interaction.user.send(embed=discord.Embed(title="Role setup", description="Assign roles with emojis. Essential for /choose_roles.\n\nIMPORTANT: Send the following message in exactly this format:\n\n!role_setup [role_name]:[emoji] [role_name]:[emoji]...\n'role_name' = actual name \n 'emoji' = desired emoji for the role\n\nExample: !role_setup VIP:💎 Member:🙄", colour=6702))
+        except discord.Forbidden:
+            print("User has DMs disabled.")
+            
         await interaction.response.send_message(embed=discord.Embed(title="Check your DMs.",description="I have sent you instructions.", colour=6702), ephemeral=True, delete_after=8.0)
         
         
@@ -356,9 +375,12 @@ class BasicCommands(commands.Cog):
         while timer > 0:
             await asyncio.sleep(1)
             timer -= 1
+        try:    
+            await interaction.user.send(embed=discord.Embed(title="Reminder!", description=todo, colour=6702))
+        except discord.Forbidden:
+            print("User has DMs disabled.")
             
-        await interaction.user.send(embed=discord.Embed(title="Reminder!", description=todo, colour=6702))
-        
+                    
     @app_commands.command(name="tictactoe", description="The game TicTacToe")
     async def tictactoe(self, interaction: discord.Interaction):
         view = ChooseTicTacToeEnemy()

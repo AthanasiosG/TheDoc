@@ -50,8 +50,11 @@ async def on_member_join(member):
         async with aiosqlite.connect("database.db") as conn:
             cursor = await conn.cursor()
             await cursor.execute("DELETE FROM server_kicked WHERE user_id=?", (member.id,))
-        await member.send(embed=discord.Embed(title=f"Welcome to the server **{guild}**!", colour=6702)) 
-              
+        try:
+            await member.send(embed=discord.Embed(title=f"Welcome to the server **{guild}**!", colour=6702)) 
+        except discord.Forbidden:
+            print("User has DMs disabled.")
+    
     
 @client.event
 async def on_member_remove(member):
@@ -70,8 +73,11 @@ async def on_member_remove(member):
         for channel in all_channels:
             if channel.name.lower() in ["willkommen", "welcome"] and isinstance(channel, discord.TextChannel):
                 invite = await channel.create_invite(max_age=86400, max_uses=1, unique=True)
-                await member.send(embed=discord.Embed(title=f"You have left **{guild}**:", description="If this was a mistake, you can rejoin using this link!", colour=6702, url=invite))
-                break
+                try:
+                    await member.send(embed=discord.Embed(title=f"You have left **{guild}**:", description="If this was a mistake, you can rejoin using this link!", colour=6702, url=invite))
+                    break
+                except discord.Forbidden:
+                    print("User has DMs disabled.")
         
     
 @client.event
@@ -145,15 +151,18 @@ async def on_message(msg):
                     violations = await cursor.fetchone()
                     violations = violations[0]
                     user = await msg.guild.fetch_member(user_id)
-                    if violations < violation_limit:
-                        await user.send(embed=discord.Embed(title="WARNING!", description=f"If you violate again, you will be kicked from the server at {violation_limit} violations!",colour=6702))
-                    elif violations == violation_limit:
-                        await cursor.execute("INSERT INTO server_kicked (user_id) VALUES (?)", (user.id,))
-                        await conn.commit()                             
-                        await msg.guild.kick(user)
-                        await user.send(embed=discord.Embed(title="KICKED!", description="You have been kicked due to too many violations!", color= discord.Color.red()))
-                        await cursor.execute("DELETE FROM violation WHERE guild_id=? AND user_id=?", (msg.guild.id, user.id))
-                        await conn.commit() 
+                    try:
+                        if violations < violation_limit:
+                            await user.send(embed=discord.Embed(title="WARNING!", description=f"If you violate again, you will be kicked from the server at {violation_limit} violations!",colour=6702))
+                        elif violations == violation_limit:
+                            await cursor.execute("INSERT INTO server_kicked (user_id) VALUES (?)", (user.id,))
+                            await conn.commit()                             
+                            await msg.guild.kick(user)
+                            await user.send(embed=discord.Embed(title="KICKED!", description="You have been kicked due to too many violations!", color= discord.Color.red()))
+                            await cursor.execute("DELETE FROM violation WHERE guild_id=? AND user_id=?", (msg.guild.id, user.id))
+                            await conn.commit() 
+                    except discord.Forbidden:
+                        print("User has DMs disabled.")
 
 
 client.run(TOKEN)
