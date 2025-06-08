@@ -5,7 +5,6 @@ Please make sure to read the LICENSE file before using or modifying any part of 
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>TheDoc Links</title>
 </head>
 <body>
   <p>
