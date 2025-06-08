@@ -89,43 +89,42 @@ class BasicCommands(commands.Cog):
     @app_commands.command(name="kick", description="Kick a user")
     @app_commands.checks.has_permissions(administrator=True)
     async def kick(self, interaction: discord.Interaction, user: discord.User, reason: str):
+        await interaction.response.defer(ephemeral=True)        
+        
         async with aiosqlite.connect("database.db") as conn:
             cursor = await conn.cursor()
             await cursor.execute("INSERT INTO server_kicked VALUES (?)", (user.id,))
             await conn.commit()
-        
-        await interaction.guild.kick(user=user, reason=reason)
         
         try:
             await user.send(embed=discord.Embed(title="You have been kicked for the following reason:", description=reason, color=discord.Color.red()))
         except discord.Forbidden:
             print("User has DMs disabled.")
         
-        msg = f"{user} was successfully kicked!"
-        await interaction.user.send(embed=discord.Embed(title=msg, description="Reason: " + reason, color=discord.Color.red()))
-        await interaction.response.defer(ephemeral=True)        
+        await interaction.guild.kick(user=user, reason=reason)
+        await interaction.user.send(embed=discord.Embed(title=f"{user} was successfully kicked!", description="Reason: " + reason, color=discord.Color.red()))
         await interaction.followup.send(f"Process completed. User kicked.", ephemeral=True)
 
 
     @app_commands.command(name="ban", description="Ban a user")
     @app_commands.checks.has_permissions(administrator=True)
     async def ban(self, interaction: discord.Interaction, user: discord.User, reason: str):
+        await interaction.response.defer(ephemeral=True)
+                
         async with aiosqlite.connect("database.db") as conn:
             cursor = await conn.cursor()
             await cursor.execute("INSERT INTO server_kicked VALUES (?)", (user.id,))
             await conn.commit()
             
-        await interaction.guild.ban(user=user, reason=reason)
-        
         try:
             await user.send(embed=discord.Embed(title="You have been banned for the following reason:", description=reason, color=discord.Color.red()))
         except discord.Forbidden:
             print("User has DMs disabled.")
         
-        msg = f"{user} was successfully banned!"
-        await interaction.user.send(embed=discord.Embed(title=msg, description="Reason: " + reason, color=discord.Color.red()))
-        await interaction.response.defer(ephemeral=True)        
+        await interaction.guild.ban(user=user, reason=reason)
+        await interaction.user.send(embed=discord.Embed(title=f"{user} was successfully banned!", description="Reason: " + reason, color=discord.Color.red()))
         await interaction.followup.send(f"Process completed. User banned.", ephemeral=True)
+        
         async with aiosqlite.connect("database.db") as conn:
             cursor = await conn.cursor()
             await cursor.execute("INSERT INTO server_kicked VALUES (?)", (user.id,))
