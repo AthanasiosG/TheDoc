@@ -8,9 +8,9 @@ Please make sure to read the LICENSE file before using or modifying any part of 
 </head>
 <body>
   <p>
-    By using this service, you agree to our
+    By using this service, you agree to my
     <a href="https://athanasiosg.github.io/TheDoc/terms.html" target="_blank">Terms of Service</a>
-    and acknowledge our
+    and acknowledge my
     <a href="https://athanasiosg.github.io/TheDoc/privacy.html" target="_blank">Privacy Policy</a>.
   </p>
 </body>
