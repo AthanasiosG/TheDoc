@@ -153,7 +153,7 @@ class BasicCommands(commands.Cog):
         
         
     @app_commands.command(name="choose_roles", description="Choose the roles you want")
-    async def chose_role(self, interaction: discord.Interaction):
+    async def choose_role(self, interaction: discord.Interaction):
         view = await ChooseRole.create(interaction)
         role_emoji = ""
         
