@@ -7,16 +7,19 @@ async def load_ttt_board(user_id):
         cursor = await conn.cursor()
         await cursor.execute("SELECT board, count, opponent_id FROM tictactoe_board WHERE user_id=?", (user_id,))
         row = await cursor.fetchone()
+       
         if row:
             board = ast.literal_eval(row[0])
             count = row[1]
             opponent_id = row[2]
+       
         else:
             board = [i for i in range(1, 10)]
             count = 0
             opponent_id = None
             await cursor.execute("INSERT OR REPLACE INTO tictactoe_board (user_id, board, count, opponent_id) VALUES (?, ?, ?, ?)", (user_id, str(board), count, opponent_id))
             await conn.commit()
+        
         return board, count, opponent_id
 
 
@@ -103,12 +106,16 @@ async def load_hangman(user_id):
         cursor = await conn.cursor()
         await cursor.execute("SELECT opponent_id, word, hg_word, failed_attempts, disabled_buttons, active FROM hangman WHERE user_id=?", (user_id,))
         row = await cursor.fetchone()
+      
         if row:
             opponent_id, word, hg_word, failed_attempts, disabled_buttons, active = row
+          
             if disabled_buttons:
                 disabled_buttons = set(disabled_buttons.split(","))
+           
             else:
                 disabled_buttons = set()
+      
         else:
             opponent_id = None
             word = ""
@@ -116,6 +123,7 @@ async def load_hangman(user_id):
             failed_attempts = 0
             disabled_buttons = set()
             active = 1
+           
             await cursor.execute("INSERT OR REPLACE INTO hangman (user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons, active) VALUES (?, ?, ?, ?, ?, ?, ?)", (user_id, opponent_id, word, hg_word, failed_attempts, "", active))
             await conn.commit()
         
@@ -125,10 +133,13 @@ async def load_hangman(user_id):
 async def save_hangman(user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons, active=1):
     async with aiosqlite.connect("database.db") as conn:
         cursor = await conn.cursor()
+      
         if isinstance(disabled_buttons, set):
             disabled_buttons_str = ",".join(disabled_buttons)
+      
         else:
             disabled_buttons_str = disabled_buttons or ""
+       
         await cursor.execute("INSERT OR REPLACE INTO hangman (user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons, active) VALUES (?, ?, ?, ?, ?, ?, ?)", (user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons_str, active))
         await conn.commit()
 
@@ -152,14 +163,17 @@ async def is_hangman_active(user_id):
         cursor = await conn.cursor()
         await cursor.execute("SELECT active FROM hangman WHERE user_id=?", (user_id,))
         row = await cursor.fetchone()
+       
         return row and row[0] == 1
 
 
 def get_hg_winner(word: str, hg_word: str) -> str:
     if word == hg_word:
         return "You won!"
+   
     elif len(hg_word) == 0:
         return "You lost!"
+   
     else:
         return "Game is still ongoing"
 
@@ -167,6 +181,7 @@ def get_hg_winner(word: str, hg_word: str) -> str:
 def is_hg_game_over(word: str, hg_word: str, failed_attempts: int) -> bool:
     if word == hg_word or "◻️" not in hg_word or failed_attempts >= 6:
         return True
+  
     return False
 
 
@@ -175,8 +190,10 @@ async def get_disabled_buttons(user_id):
         cursor = await conn.cursor()
         await cursor.execute("SELECT disabled_buttons FROM hangman WHERE user_id=?", (user_id,))
         row = await cursor.fetchone()
+     
         if row and row[0]:
             return set(row[0].split(","))
+     
         return set()
 
 async def set_disabled_buttons(user_id, disabled_buttons):

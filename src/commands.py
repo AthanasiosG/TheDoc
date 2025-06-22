@@ -53,6 +53,7 @@ class BasicCommands(commands.Cog):
     @app_commands.command(name="server_owner", description="Shows who owns the server")
     async def server_owner(self, interaction: discord.Interaction):
         owner = interaction.guild.owner
+        
         await interaction.response.send_message(embed=discord.Embed(title="The server belongs to " + str(owner) +"!", colour=6702))
 
     
@@ -68,12 +69,14 @@ class BasicCommands(commands.Cog):
                 
         if is_verified:
             await interaction.response.send_message(embed=discord.Embed(title="You are already verified!", description="This message will be automatically deleted soon...", colour=6702), ephemeral=True, delete_after=8.0)
+        
         else:
             rules = "Please follow the general Discord rules"
             embed = discord.Embed(title=rules, description="To accept the rules, click the green button. To decline, click the red button.",color=discord.Color.green())
             embed.set_thumbnail(url="https://kwiqreply.io/img/icon/verify.png")
             view = VerifyButtons()
             await interaction.response.send_message(embed=embed, view=view)
+            
             sent_msg = await interaction.original_response()
             await set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "bot")
 
@@ -83,6 +86,7 @@ class BasicCommands(commands.Cog):
     async def clear(self, interaction: discord.Interaction, amount: int):
         await interaction.response.defer(ephemeral=True)
         deleted = await interaction.channel.purge(limit=amount)
+        
         await interaction.followup.send(f"{len(deleted)} messages deleted.", ephemeral=True)
 
 
@@ -118,6 +122,7 @@ class BasicCommands(commands.Cog):
             
         try:
             await user.send(embed=discord.Embed(title="You have been banned for the following reason:", description=reason, color=discord.Color.red()))
+        
         except discord.Forbidden:
             print("User has DMs disabled.")
         
@@ -138,6 +143,7 @@ class BasicCommands(commands.Cog):
         
         for idx, role in enumerate(all_roles):
             roles += f"{idx+1}: " + role + "\n"
+            
         await interaction.response.send_message(embed=discord.Embed(title="All roles", description=roles, colour=6702))          
 
 
@@ -146,6 +152,7 @@ class BasicCommands(commands.Cog):
     async def role_setup(self, interaction: discord.Interaction):
         try:
             await interaction.user.send(embed=discord.Embed(title="Role setup", description="Assign roles with emojis. Essential for /choose_roles.\n\nIMPORTANT: Send the following message in exactly this format:\n\n!role_setup [role_name]:[emoji] [role_name]:[emoji]...\n'role_name' = actual name \n 'emoji' = desired emoji for the role\n\nExample: !role_setup VIP:💎 Member:🙄", colour=6702))
+        
         except discord.Forbidden:
             print("User has DMs disabled.")
             
@@ -160,16 +167,21 @@ class BasicCommands(commands.Cog):
         async with aiosqlite.connect("database.db") as conn:
             cursor = await conn.cursor()
             await cursor.execute("SELECT * FROM role_setup WHERE guild_id=?", (interaction.guild.id,))     
+           
             for data in await cursor.fetchall():
-                role_emoji += f"{data[1]}: {data[2]}\n"        
+                role_emoji += f"{data[1]}: {data[2]}\n"    
+                    
             server_found = False
             await cursor.execute("SELECT * FROM role_setup")  
+            
             for data in await cursor.fetchall():
                 if interaction.guild.id == data[0]:
                     server_found = True
+                    
             if server_found:
                 await interaction.response.send_message(embed=discord.Embed(title=f"Choose your roles:", description=role_emoji, colour=6702), view=view, ephemeral=True)
                 role_emoji = ""
+                
             else:
                 await interaction.response.send_message(embed=discord.Embed(title=f"No role setup done yet -> /role_setup", colour=6702), ephemeral=True, delete_after=10.0)
 
@@ -185,17 +197,23 @@ class BasicCommands(commands.Cog):
             cursor = await conn.cursor()
             await cursor.execute("SELECT * FROM sup_setup WHERE guild_id=?", (interaction.guild.id,))
             data = await cursor.fetchone()
+           
             if data:
                 channel_one = discord.utils.get(all_channels, name=data[1])
                 channel_two = discord.utils.get(all_channels, name=data[2])
+                
                 if channel_one:
                     await channel_one.delete()
+                    
                 if channel_two:
                     await channel_two.delete()
+                    
                 await cursor.execute("DELETE FROM sup_setup WHERE guild_id=?", (interaction.guild.id,))
                 await conn.commit()
+                
             await interaction.guild.create_text_channel(name=sup_ch_name)
             support_team_channel = await interaction.guild.create_text_channel(name=sup_team_ch_name)
+            
             await cursor.execute("INSERT INTO sup_setup VALUES (?,?,?,?)", (interaction.guild.id, sup_ch_name, sup_team_ch_name, sup_role))
             await conn.commit()
 
@@ -204,6 +222,7 @@ class BasicCommands(commands.Cog):
         for role in all_roles:
             if role.name == support_role.name:
                 await support_team_channel.set_permissions(target=role, read_messages=True, send_messages=True)      
+            
             else:
                 await support_team_channel.set_permissions(target=role, read_messages=False, send_messages=False)
 
@@ -219,16 +238,22 @@ class BasicCommands(commands.Cog):
         async with aiosqlite.connect("database.db") as conn:
             cursor = await conn.cursor()
             await cursor.execute("SELECT guild_id FROM sup_setup WHERE guild_id=?", (interaction.guild.id,))
+            
             if not await cursor.fetchall():
                 await interaction.response.send_message(embed=discord.Embed(title="Error:", description="No setup has been done yet. Please run /support_setup.", colour=6702), ephemeral=True, delete_after=10.0)
+            
             else:   
                 await cursor.execute("SELECT * FROM sup_setup")
+                
                 for data in await cursor.fetchall():
                     if data[0] == interaction.guild.id:
                         sup_ch_name = data[1]
+                
                 sup_channel = discord.utils.get(all_channels, name=sup_ch_name)
+                
                 if interaction.channel == sup_channel:
                     await interaction.response.send_message(embed=discord.Embed(title="Support", description="Are you sure you want to open a ticket?", colour=6702), view=view, ephemeral=True, delete_after=15.0)
+               
                 else:
                     await interaction.response.send_message(embed=discord.Embed(title=f"Go to the {sup_channel.mention} channel to get help.", description="This message will be automatically deleted soon...", colour=6702), ephemeral=True, delete_after=8.0)
                     await interaction.original_response()
@@ -246,12 +271,14 @@ class BasicCommands(commands.Cog):
         async with aiosqlite.connect("database.db") as conn:
             cursor = await conn.cursor()
             await cursor.execute("SELECT * FROM sup_setup")
+            
             for data in await cursor.fetchall():
                 if data[0] == interaction.guild.id:
                     sup_role = discord.utils.get(all_roles, name=data[3])
                     
         if user_sup_role:
             await interaction.response.send_message(embed=discord.Embed(title="Close ticket?", description="This channel will be deleted. Continue?", colour=6702), view=view, ephemeral=True, delete_after=10.0)
+        
         else:
             await interaction.response.send_message("❌ You do not have permission for this command.\n\nThis message will be automatically deleted soon...", ephemeral=True, delete_after=8.0)
              
@@ -269,16 +296,19 @@ class BasicCommands(commands.Cog):
             cursor = await conn.cursor()
             await cursor.execute("SELECT active FROM auto_vc_control WHERE guild_id=?", (interaction.guild.id,))
             result = await cursor.fetchone()
+            
             if result is None:
                 await cursor.execute("INSERT INTO auto_vc_control (guild_id, active) VALUES (?, ?)", (interaction.guild.id, 1))
                 await conn.commit()
                 await interaction.response.send_message(embed=discord.Embed(title="Auto-Voice-Channel-Control enabled!", colour=6702), ephemeral=True, delete_after=8.0)
                 return
+            
             else:
                 if result[0] == 1:
                     await cursor.execute("UPDATE auto_vc_control SET active=? WHERE guild_id=?", (0, interaction.guild.id))
                     await conn.commit()
                     await interaction.response.send_message(embed=discord.Embed(title="Auto-Voice-Channel-Control disabled!", colour=6702), ephemeral=True, delete_after=8.0)
+                
                 else:
                     await cursor.execute("UPDATE auto_vc_control SET active=? WHERE guild_id=?", (1, interaction.guild.id))
                     await conn.commit()
@@ -292,9 +322,11 @@ class BasicCommands(commands.Cog):
         async with aiosqlite.connect("database.db") as conn:
             cursor = await conn.cursor()
             await cursor.execute("SELECT * FROM blacklist")
+            
             for data in await cursor.fetchall():
                 if data[0] == interaction.guild.id:
                     all_words += f"{data[1]}\n"
+                    
             await interaction.response.send_message(embed=discord.Embed(title="All blocked words:", description=all_words, colour=6702), delete_after=15.0)
         
         
@@ -307,11 +339,13 @@ class BasicCommands(commands.Cog):
             cursor = await conn.cursor()
             await cursor.execute("SELECT * FROM blacklist")
             word_found = False
+            
             for data in await cursor.fetchall():
                 if data[1] == word:
                     await interaction.followup.send("This word is already on the blacklist.")
                     word_found = True
                     break
+                
             if not word_found:
                 await cursor.execute("INSERT INTO blacklist VALUES (?,?)", (interaction.guild.id, word))
                 await conn.commit()
@@ -326,10 +360,12 @@ class BasicCommands(commands.Cog):
         async with aiosqlite.connect("database.db") as conn:
             cursor = await conn.cursor()
             await cursor.execute("SELECT * FROM blacklist")
+            
             for data in await cursor.fetchall():
                 if data[0] == interaction.guild.id:
                     await cursor.execute("DELETE FROM blacklist WHERE word=? AND guild_id=?", (word, interaction.guild.id))
                     await conn.commit()
+                    
             await interaction.followup.send(f"{word} has been removed from the blacklist!", ephemeral=True)
 
 
@@ -351,10 +387,12 @@ class BasicCommands(commands.Cog):
         if amount < 1:
             await interaction.response.send_message("The violation limit must be at least 1.", ephemeral=True)
             return
+        
         async with aiosqlite.connect("database.db") as conn:
             cursor = await conn.cursor()
             await cursor.execute("INSERT OR REPLACE INTO violation_limit (guild_id, amount) VALUES (?, ?)", (interaction.guild.id, amount))
             await conn.commit()
+            
         await interaction.response.send_message(f"Violation limit set to {amount} for this server.", ephemeral=True)   
         
                  
@@ -362,6 +400,7 @@ class BasicCommands(commands.Cog):
     async def coinflip(self, interaction: discord.Interaction):
         coin = random.choice(["Heads", "Tails"])
         coin = f"You flipped {coin}."
+        
         await interaction.response.send_message(embed=discord.Embed(title=coin, colour=6702))
 
 
@@ -376,6 +415,7 @@ class BasicCommands(commands.Cog):
             timer -= 1
         try:    
             await interaction.user.send(embed=discord.Embed(title="Reminder!", description=todo, colour=6702))
+            
         except discord.Forbidden:
             print("User has DMs disabled.")
             
@@ -384,6 +424,7 @@ class BasicCommands(commands.Cog):
     async def tictactoe(self, interaction: discord.Interaction):
         view = ChooseTicTacToeEnemy()
         await interaction.response.send_message(embed=discord.Embed(title="Against player or computer?", colour=6702), view=view, delete_after=8.0)
+        
         sent_msg = await interaction.original_response()
         await set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "bot")
         
@@ -394,8 +435,10 @@ class BasicCommands(commands.Cog):
             cursor = await conn.cursor()
             await cursor.execute("SELECT active FROM hangman WHERE user_id=?", (interaction.user.id,))
             row = await cursor.fetchone()
+            
             if row and row[0] == 1:
                 await deactivate_hangman(interaction.user.id)
+                
             await cursor.execute("DELETE FROM hangman WHERE user_id=?", (interaction.user.id,))
             await conn.commit()
             await cursor.execute("INSERT INTO hangman (user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons, active) VALUES (?, ?, ?, ?, ?, ?, ?)", (interaction.user.id, None, word, "", 0, "", 1))
@@ -403,6 +446,7 @@ class BasicCommands(commands.Cog):
 
         view = HangmanPlayerReady(interaction.user.id, word)
         await interaction.response.send_message(embed=discord.Embed(title=f"Waiting for an opponent! The first to click 'Ready' will play against {interaction.user}.", colour=6702), view=view)
+        
         sent_msg = await interaction.original_response()
         await set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "bot")
         await set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "hangman")
@@ -421,14 +465,18 @@ class BasicCommands(commands.Cog):
             cursor = await conn.cursor()
             await cursor.execute("SELECT active FROM hangman WHERE user_id=?", (interaction.user.id,))
             row = await cursor.fetchone()
+            
             if row and row[0] == 1:
                 await deactivate_hangman(interaction.user.id)
+                
             await cursor.execute("DELETE FROM hangman WHERE user_id=?", (interaction.user.id,))
             await conn.commit()
             await cursor.execute("INSERT INTO hangman (user_id, opponent_id, word, hg_word, failed_attempts, disabled_buttons, active) VALUES (?, ?, ?, ?, ?, ?, ?)", (interaction.user.id, None, word, "", 0, "", 1))
             await conn.commit()
+            
         view = HangmanComputerReady(interaction.user.id, word)
         await interaction.response.send_message(embed=discord.Embed(title="Start game?", description="Press **Ready** to start!", colour=6702), view=view)
+        
         sent_msg = await interaction.original_response()
         await set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "bot")
         await set_bot_message(interaction.user.id, sent_msg.channel.id, sent_msg.id, "hangman")
@@ -448,6 +496,7 @@ class BasicCommands(commands.Cog):
             answer = data["lösung"]
             difficulty = data["schwierigkeit"]
             view = Quiz(user_id, question, answer_choices, answer, difficulty)
+            
             await interaction.response.send_message(embed=discord.Embed(title="Question: "+ question, description="Answer choices:", colour=6702), view=view)
             
     
@@ -457,13 +506,16 @@ class BasicCommands(commands.Cog):
             cursor = await conn.cursor()
             await cursor.execute("SELECT points FROM quiz_points WHERE user_id=?", (interaction.user.id,))
             points = await cursor.fetchone()
+            
             if points:
                 points = points[0]
+                
             else:
                 points = None
         
         if points is not None:
             await interaction.response.send_message(embed=discord.Embed(title=f"You have {points} quiz points!", colour=6702))
+            
         else:
             await interaction.response.send_message(embed=discord.Embed(title="You do not have any quiz points yet.", colour=6702), ephemeral=True)
             
@@ -493,17 +545,23 @@ class BasicCommands(commands.Cog):
             cursor = await conn.cursor()
             await cursor.execute("SELECT points FROM quiz_points WHERE user_id=?", (interaction.user.id,))
             current_points = await cursor.fetchone()
+            
             if not current_points or current_points[0] < points:
                 await interaction.response.send_message(embed=discord.Embed(title="You do not have enough quiz points to gamble.", colour=6702), ephemeral=True)
                 return
+            
             gamble_result = random.choice(["win", "lose"])
+            
             if gamble_result == "win":
                 new_points = current_points[0] + points
                 await cursor.execute("UPDATE quiz_points SET points=? WHERE user_id=?", (new_points, interaction.user.id))
                 await conn.commit()
+                
                 await interaction.response.send_message(embed=discord.Embed(title=f"You won! You now have {new_points} quiz points.", colour=6702))
+                
             else:
                 new_points = current_points[0] - points
                 await cursor.execute("UPDATE quiz_points SET points=? WHERE user_id=?", (new_points, interaction.user.id))
                 await conn.commit()
+                
                 await interaction.response.send_message(embed=discord.Embed(title=f"You lost! You now have {new_points} quiz points.", colour=6702))
