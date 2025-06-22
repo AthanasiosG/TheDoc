@@ -219,12 +219,9 @@ class BasicCommands(commands.Cog):
 
         support_role = discord.utils.get(interaction.guild.roles, name=sup_role)
 
-        for role in all_roles:
-            if role.name == support_role.name:
-                await support_team_channel.set_permissions(target=role, read_messages=True, send_messages=True)      
-            
-            else:
-                await support_team_channel.set_permissions(target=role, read_messages=False, send_messages=False)
+
+        await support_team_channel.set_permissions(target=interaction.guild.default_role, read_messages=False, send_messages=False)
+        await support_team_channel.set_permissions(target=support_role, read_messages=True, send_messages=True)
 
         await interaction.followup.send("Setup saved!", ephemeral=True)
             
