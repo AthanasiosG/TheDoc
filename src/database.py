@@ -30,6 +30,7 @@ class DatabaseManager:
 
             await cursor.execute("""CREATE TABLE IF NOT EXISTS sup_setup(
                 guild_id INTEGER NOT NULL,
+                sup_category TEXT NOT NULL,
                 sup_ch_name TEXT NOT NULL,
                 sup_team_ch_name TEXT NOT NULL,
                 sup_role TEXT NOT NULL

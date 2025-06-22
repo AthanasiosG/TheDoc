@@ -65,7 +65,7 @@ class SupportButtons(discord.ui.View):
             data = await cursor.fetchone()
             
             if data:
-                sup_team_ch_name = data[2]
+                sup_team_ch_name = data[3]
         
         view = SupportTeamButtons(user_id)
         support_role = discord.utils.get(guild.roles, name="Support")
@@ -96,8 +96,20 @@ class SupportTeamButtons(discord.ui.View):
         await interaction.response.defer(ephemeral=True)
         guild = interaction.guild
         user = guild.get_member(self.user_id)
-        sup_channel = await guild.create_text_channel(name=f"support-{user.name}")
+        
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("SELECT sup_category FROM sup_setup WHERE guild_id=?", (guild.id,))
+            result = await cursor.fetchone()
+            if result:
+                category = result[0]
+                category = discord.utils.get(guild.categories, name=category)
+            else:
+                category = None
+
+        sup_channel = await category.create_text_channel(name=f"support-{user.name}")
         await sup_channel.set_permissions(user, read_messages=True, send_messages=True)
+        
         msg_info = await get_bot_message(interaction.user.id, "support")
         
         if msg_info:
