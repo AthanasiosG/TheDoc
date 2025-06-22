@@ -188,43 +188,78 @@ class BasicCommands(commands.Cog):
 
     @app_commands.command(name="support_setup", description="Setup to use the support system")
     @app_commands.checks.has_permissions(administrator=True)
-    async def sup_setup(self, interaction: discord.Interaction, sup_ch_name: str, sup_team_ch_name: str, sup_role: str):        
-        all_channels = await interaction.guild.fetch_channels()        
-        all_roles = await interaction.guild.fetch_roles()
+    async def sup_setup(self, interaction: discord.Interaction, sup_category: str, sup_ch_name: str, sup_team_ch_name: str, sup_role: str):        
         await interaction.response.defer(ephemeral=True)
 
         async with aiosqlite.connect("database.db") as conn:
             cursor = await conn.cursor()
             await cursor.execute("SELECT * FROM sup_setup WHERE guild_id=?", (interaction.guild.id,))
             data = await cursor.fetchone()
-           
+            category: discord.CategoryChannel = None
+            cat_found = False
+            all_categories = interaction.guild.categories
+
             if data:
-                channel_one = discord.utils.get(all_channels, name=data[1])
-                channel_two = discord.utils.get(all_channels, name=data[2])
+                old_category_name = data[1]
                 
-                if channel_one:
-                    await channel_one.delete()
+                if old_category_name != sup_category:
+                    old_category = discord.utils.get(all_categories, name=old_category_name)
                     
-                if channel_two:
-                    await channel_two.delete()
+                    if old_category:
+                        for channel in list(old_category.channels):
+                            await channel.delete()
+                            
+                        await old_category.delete()
+                        
+                    await cursor.execute("DELETE FROM sup_setup WHERE guild_id=?", (interaction.guild.id,))
+                    await conn.commit()
                     
-                await cursor.execute("DELETE FROM sup_setup WHERE guild_id=?", (interaction.guild.id,))
-                await conn.commit()
-                
-            await interaction.guild.create_text_channel(name=sup_ch_name)
-            support_team_channel = await interaction.guild.create_text_channel(name=sup_team_ch_name)
+                    cat_found = False  
+               
+                else:
+                    for cat in all_categories:
+                        if cat.name == sup_category:
+                            cat_found = True
+                            category = cat
+                            break
+                        
+                    channel_one = None
+                    channel_two = None
+                    
+                    if category:
+                        for channel in category.text_channels:
+                            if channel.name == data[2]:
+                                channel_one = channel
+                                
+                            elif channel.name == data[3]:
+                                channel_two = channel
+                                
+                        if channel_one:
+                            await channel_one.delete()
+                            
+                        if channel_two:
+                            await channel_two.delete()
+                            
+                        await cursor.execute("DELETE FROM sup_setup WHERE guild_id=?", (interaction.guild.id,))
+                        await conn.commit()
+
+            if not cat_found:
+                category = await interaction.guild.create_category(name=sup_category)
+
+            if not isinstance(category, discord.CategoryChannel):
+                await interaction.followup.send("Fehler: Kategorie konnte nicht korrekt erstellt werden.", ephemeral=True)
+                return
             
-            await cursor.execute("INSERT INTO sup_setup VALUES (?,?,?,?)", (interaction.guild.id, sup_ch_name, sup_team_ch_name, sup_role))
+            support_channel = await category.create_text_channel(name=sup_ch_name)
+            support_team_channel = await category.create_text_channel(name=sup_team_ch_name)
+
+            await cursor.execute("INSERT INTO sup_setup VALUES (?,?,?,?,?)", (interaction.guild.id, sup_category, sup_ch_name, sup_team_ch_name, sup_role))
             await conn.commit()
 
         support_role = discord.utils.get(interaction.guild.roles, name=sup_role)
 
-        for role in all_roles:
-            if role.name == support_role.name:
-                await support_team_channel.set_permissions(target=role, read_messages=True, send_messages=True)      
-            
-            else:
-                await support_team_channel.set_permissions(target=role, read_messages=False, send_messages=False)
+        await support_team_channel.set_permissions(target=interaction.guild.default_role, read_messages=False, send_messages=False)
+        await support_team_channel.set_permissions(target=support_role, read_messages=True, send_messages=True)
 
         await interaction.followup.send("Setup saved!", ephemeral=True)
             
@@ -247,7 +282,7 @@ class BasicCommands(commands.Cog):
                 
                 for data in await cursor.fetchall():
                     if data[0] == interaction.guild.id:
-                        sup_ch_name = data[1]
+                        sup_ch_name = data[2]
                 
                 sup_channel = discord.utils.get(all_channels, name=sup_ch_name)
                 
