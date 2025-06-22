@@ -107,9 +107,8 @@ class SupportTeamButtons(discord.ui.View):
             except Exception as error:
                 print(f"Error while deleting support dialog message: {error}")
                 
-        for role in guild.roles:
-            if not role.permissions.administrator:
-                await sup_channel.set_permissions(role, read_messages=False)
+        everyone_role = guild.default_role
+        await sup_channel.set_permissions(everyone_role, read_messages=False)
 
         msg = await interaction.followup.send(embed=discord.Embed(title=f"Ticket opened: {sup_channel.mention}", colour=6702), ephemeral=True)
         support_msg = await sup_channel.send(embed=discord.Embed(title="Ticket opened", description="You are now connected to a support member.", colour=6702), content=user.mention)
