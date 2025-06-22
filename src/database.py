@@ -77,7 +77,7 @@ class DatabaseManager:
                 )
             """)
 
-            await cursor.execute("""CREATE TABLE IF NOT EXISTS quiz_points(
+            await cursor.execute("""CREATE TABLE IF NOT EXISTS doc_coins(
                 user_id INTEGER NOT NULL,
                 user_name TEXT NOT NULL,
                 points INTEGER NOT NULL DEFAULT 0,

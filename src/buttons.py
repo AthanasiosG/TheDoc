@@ -1008,7 +1008,7 @@ class Quiz(discord.ui.View):
                 elif self.difficulty == 5:
                     points = 10
                 
-                await interaction.response.edit_message(embed=discord.Embed(title="Correct!", description=f"Question: {self.question}\nThe answer **{self.answer}** is correct!\nYou have gained {points} points!", color=discord.Color.green()), view=None)
+                await interaction.response.edit_message(embed=discord.Embed(title="Correct!", description=f"Question: {self.question}\nThe answer **{self.answer}** is correct!\nYou have gained {points} DocCoins!", color=discord.Color.green()), view=None)
            
             else:
                 if self.difficulty == 1:
@@ -1028,19 +1028,19 @@ class Quiz(discord.ui.View):
                
                 async with aiosqlite.connect("database.db") as conn:
                     cursor = await conn.cursor()
-                    await cursor.execute("SELECT points FROM quiz_points WHERE user_id=?", (self.user_id,))
+                    await cursor.execute("SELECT points FROM doc_coins WHERE user_id=?", (self.user_id,))
                     row = await cursor.fetchone()
                     current_points = row[0] if row else 0
                    
                     if current_points + points < 0:
                         points = -current_points
                 
-                await interaction.response.edit_message(embed=discord.Embed(title="Wrong!", description=f"Question: {self.question}\nThe correct answer is: **{self.answer}**\nYou have lost {points} points!", color=discord.Color.red()), view=None)
+                await interaction.response.edit_message(embed=discord.Embed(title="Wrong!", description=f"Question: {self.question}\nThe correct answer is: **{self.answer}**\nYou have lost {points} DocCoins!", color=discord.Color.red()), view=None)
 
             async with aiosqlite.connect("database.db") as conn:
                 cursor = await conn.cursor()
-                await cursor.execute("INSERT OR IGNORE INTO quiz_points (user_id, user_name, points) VALUES (?, ?, 0)", (self.user_id, user.name))
-                await cursor.execute("UPDATE quiz_points SET points=points+? WHERE user_id=?", (points, self.user_id))
+                await cursor.execute("INSERT OR IGNORE INTO doc_coins (user_id, user_name, points) VALUES (?, ?, 0)", (self.user_id, user.name))
+                await cursor.execute("UPDATE doc_coins SET points=points+? WHERE user_id=?", (points, self.user_id))
                 await conn.commit()
                 
         return move
