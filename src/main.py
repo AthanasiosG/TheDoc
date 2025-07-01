@@ -183,7 +183,7 @@ async def on_message(msg):
 
                             await user.send(embed=discord.Embed(title="KICKED!", description="You have been kicked due to too many violations!", color= discord.Color.red()))
                             await cursor.execute("DELETE FROM violation WHERE guild_id=? AND user_id=?", (msg.guild.id, user.id))
-                            await conn.commit() 
+                            await conn.commit()
                             await msg.guild.kick(user)
                             
                     except discord.Forbidden:
