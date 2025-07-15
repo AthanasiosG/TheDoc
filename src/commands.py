@@ -600,3 +600,64 @@ class BasicCommands(commands.Cog):
                 await conn.commit()
                 
                 await interaction.response.send_message(embed=discord.Embed(title=f"You lost! You now have {new_points} DocCoins.", colour=6702))
+                
+                
+    @app_commands.command(name="note", description="Adds something to your notes")
+    async def note(self, interaction: discord.Interaction, text: str):
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("INSERT INTO notes (user_id, text) VALUES (?, ?)", (interaction.user.id, text))
+            await conn.commit()
+        
+        await interaction.response.send_message(embed=discord.Embed(title="Saved!",
+                                                                    description=f"**{text}** has been added to your notes.",
+                                                                    color=discord.Color.green()),
+                                                                    ephemeral=True,
+                                                                    delete_after=8.0)
+
+
+    @app_commands.command(name="notes", description="Shows all your notes")
+    async def notes(self, interaction: discord.Interaction):
+        await interaction.response.defer(ephemeral=True)
+        response = ""
+        
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("SELECT text FROM notes WHERE user_id=?", (interaction.user.id,))
+            result = await cursor.fetchall()
+
+            if not result:
+                await interaction.followup.send(embed=discord.Embed(title="Your notes are empty", colour=6702))
+                return 
+            
+            for idx, (text,) in enumerate(result, start=1):
+                response += f"`{idx}:` {text}\n\n"
+        
+        await interaction.followup.send(embed=discord.Embed(title="Your Notes:",
+                                                            description=response,
+                                                            colour=6702))
+
+
+    @app_commands.command(name="remove_note", description="Removes a note by its number")
+    async def remove_note(self, interaction: discord.Interaction, number: int):
+        await interaction.response.defer(ephemeral=True)
+        deleted_text = None
+
+        async with aiosqlite.connect("database.db") as conn:
+            cursor = await conn.cursor()
+            await cursor.execute("SELECT text FROM notes WHERE user_id=?", (interaction.user.id,))
+            result = await cursor.fetchall()
+
+            if not result or number < 1 or number > len(result):
+                await interaction.followup.send(embed=discord.Embed(title="Command failed...",
+                                                                    description="Invalid note number or your notes are empty.",
+                                                                    color=discord.Color.red()))
+                return
+
+            deleted_text = result[number - 1][0]
+            await cursor.execute("DELETE FROM notes WHERE user_id=? AND text=?", (interaction.user.id, deleted_text))
+            await conn.commit()
+
+        await interaction.followup.send(embed=discord.Embed(title="Successfully Updated!",
+                                                            description=f"**{deleted_text}** has been deleted from your notes.",
+                                                            color=discord.Color.red()))
