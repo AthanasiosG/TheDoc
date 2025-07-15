@@ -112,12 +112,12 @@ async def on_voice_state_update(member, before, after):
             await channel.edit(name="Talk" + str(i))    
                 
                     
-# @client.tree.error
-# async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
-#     if isinstance(error, app_commands.MissingPermissions):
-#         await interaction.response.send_message("❌ You do not have permission for this command.\n\nThis message will be automatically deleted soon...", ephemeral=True, delete_after=8.0)
-#     else:
-#         await interaction.response.send_message("An unknown error has occurred.\n\nThis message will be automatically deleted soon...", ephemeral=True, delete_after=8.0)
+@client.tree.error
+async def on_app_command_error(interaction: discord.Interaction, error: app_commands.AppCommandError):
+    if isinstance(error, app_commands.MissingPermissions):
+        await interaction.response.send_message("❌ You do not have permission for this command.\n\nThis message will be automatically deleted soon...", ephemeral=True, delete_after=8.0)
+    else:
+        await interaction.response.send_message("An unknown error has occurred.\n\nThis message will be automatically deleted soon...", ephemeral=True, delete_after=8.0)
 
 
 @client.event
