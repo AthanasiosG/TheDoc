@@ -3,7 +3,7 @@ This is a Discord bot created by me <a href="https://github.com/AthanasiosG" tar
 
 ## License & Contributions
 
-All rights are reserved, but you’re welcome to use the bot or contribute improvements after contacting me first.  
+All rights are reserved, but you’re welcome to contribute improvements after contacting me first.  
 Suggestions are always welcome — and once we’ve discussed them, feel free to open a pull request.
 ##
 <body>
