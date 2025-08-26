@@ -2,17 +2,18 @@
 
 This is a Discord bot created by [AthanasiosG](https://github.com/AthanasiosG).
 
-
-
 ## 🚀 Usage
 Everyone is welcome to use **TheDoc** for free.  
 
-By using this service, you agree to my [**Terms of Service**](https://athanasiosg.github.io/TheDoc/terms.html) and acknowledge my [**Privacy Policy**](https://athanasiosg.github.io/TheDoc/privacy.html).  
+By using this service, you agree to my:  
 
-👉 **Invite link will be available here**  
-*(once the bot is fully ready and I’m satisfied with its functionality)*  
+[![Terms of Service](https://img.shields.io/badge/Terms%20of%20Service-5865F2?style=for-the-badge)](https://athanasiosg.github.io/TheDoc/terms.html)
+[![Privacy Policy](https://img.shields.io/badge/Privacy%20Policy-5865F2?style=for-the-badge)](https://athanasiosg.github.io/TheDoc/privacy.html)
 
+## 🔗 Invite
+[![Invite TheDoc](https://img.shields.io/badge/Invite-Link-lightgrey?style=for-the-badge&logo=discord&logoColor=white)](#)  
 
+*(the link will be made available once the bot is fully ready and I’m satisfied with its functionality)*  
 
 ## 📜 License & Contributions
 All rights reserved but you’re welcome to contribute improvements after contacting me first.  
