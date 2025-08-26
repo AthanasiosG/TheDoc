@@ -5,7 +5,7 @@ This is a Discord bot created by me <a href="https://github.com/AthanasiosG" tar
 
 All rights are reserved, but you’re welcome to use the bot or contribute improvements after contacting me first.  
 Suggestions are always welcome — and once we’ve discussed them, feel free to open a pull request.
-
+##
 <body>
   <p>
     By using this service, you agree to my
